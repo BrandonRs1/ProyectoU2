@@ -2,21 +2,22 @@ import java.util.ArrayList;
 
 public class Author {
     private Profile profile;
-    private ArrayList<Book> authorBooks = new ArrayList();
+    private ArrayList<Book> books = new ArrayList<>();
 
-    public void setProfile(Profile profile) {
-        this.profile = profile;
-    }
 
     public Profile getProfile() {
         return profile;
     }
 
-    public void setAuthorBooks(Book book) {
-        authorBooks.add(book);
+    public void setProfile(Profile profile) {
+        this.profile = profile;
     }
 
-    public ArrayList<Book> getAuthorBooks() {
-        return authorBooks;
+    public void setBooks(Book book) {
+        books.add(book);
+    }
+
+    public ArrayList<Book> getBooks() {
+        return books;
     }
 }

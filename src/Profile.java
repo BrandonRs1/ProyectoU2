@@ -1,11 +1,6 @@
 public class Profile {
     private String name;
     private String lastName;
-
-    public void setBirthDate(Date birthDate) {
-        this.birthDate = birthDate;
-    }
-
     private Date birthDate;
 
     public Profile(String name, String lastName, Date birthDate) {
@@ -14,23 +9,27 @@ public class Profile {
         this.birthDate = birthDate;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public Date getBirthDate() {
         return birthDate;
     }
 
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
+    public void setBirthDate(Date birthDate) {
+        this.birthDate = birthDate;
     }
 
     public String getName() {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getLastName() {
         return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 }

@@ -1,65 +1,87 @@
+import java.util.Scanner;
 import java.util.Calendar;
 
 public class Date {
-    static Calendar Hour = Calendar.getInstance();
-    static Calendar Date = Calendar.getInstance();
-
-    private String day;
-    private String month;
-    private String year;
+    static Calendar Hora = Calendar.getInstance();
+    static Calendar Fecha = Calendar.getInstance();
+    Scanner scanner = new Scanner(System.in);
+    private String birthDate;
     private String publishDate;
+    private String borrowDate;
 
-    public String currentDate() {
-        int hour, minut, segs, day, month, year;
-
-        hour = Hour.get(Calendar.HOUR_OF_DAY);
-        minut = Hour.get(Calendar.MINUTE);
-        segs = Hour.get(Calendar.YEAR);
-
-        day = Date.get(Calendar.DATE);
-        month = Date.get(Calendar.MONTH);
-        year = Date.get(Calendar.YEAR);
-
-        String date = "Date: " + day + "/" + month + "/" + year + "\t\t";
-        String hours = "Hour: " + hour + ":" + minut + ":" + segs;
-
-        return date + hours;
+    /**
+     * Create the birthdate of authors or clients
+     *
+     * @return the birthdate like a string
+     */
+    public String birthDate() {
+        System.out.printf("Birth date: %n");
+        System.out.print("Day: ");
+        String birthDay = Auxiliar.ReadStringData(scanner);
+        System.out.print("Month: ");
+        String birthMonth = Auxiliar.ReadStringData(scanner);
+        System.out.print("Year: ");
+        String birthYear = Auxiliar.ReadStringData(scanner);
+        return birthDay + "/" + birthMonth + "/" + birthYear;
     }
 
-    public String publishYear(String day, String month, String year) {
-        this.day = day;
-        this.month = month;
-        this.year = year;
-        publishDate = day + "/" + month + "/" + year;
+    public void setBirthDate(String birthDate) {
+        this.birthDate = birthDate;
+    }
+
+    public String getStringBirthDate() {
+        return birthDate;
+    }
+
+    /**
+     * Is using to create the publishing date of the books
+     *
+     * @return the publishing date of the books
+     */
+    public String publishDate() {
+        System.out.printf("Publish date: %n");
+        System.out.print("Day: ");
+        String publishDay = Auxiliar.ReadStringData(scanner);
+        System.out.print("Month: ");
+        String publishMonth = Auxiliar.ReadStringData(scanner);
+        System.out.print("Year: ");
+        String publishYear = Auxiliar.ReadStringData(scanner);
+        this.setPublishDate(publishDay + "/" + publishMonth + "/" + publishYear);
+        return this.publishDate;
+    }
+
+    public void setPublishDate(String publishDate) {
+        this.publishDate = publishDate;
+    }
+
+    public String getStringPublishDate() {
         return publishDate;
     }
 
-    public String getDay() {
-        return day;
+    /**
+     * This method is using to get the hour and the date of the system
+     * The date that we will use for the transactions
+     */
+    public void setBorrowDate() {
+        int hour, minute, seg, day, month, year;
+        String date, hourA;
+
+        hour = Hora.get(Calendar.HOUR_OF_DAY);
+        minute = Hora.get(Calendar.MINUTE);
+        seg = Hora.get(Calendar.SECOND);
+
+        day = Fecha.get(Calendar.DATE);
+        month = Fecha.get(Calendar.MONTH);
+        year = Fecha.get(Calendar.YEAR);
+
+        date = "Date: " + day + "/" + month + "/" + year;
+        hourA = "\tHour: " + hour + ":" + minute + ":" + seg;
+
+        this.borrowDate = date + hourA;
+
     }
 
-    public String getMonth() {
-        return month;
+    public String getBorrowDate() {
+        return borrowDate;
     }
-
-    public String getPublishDateS() {
-        return publishDate;
-    }
-
-    public String getYear() {
-        return year;
-    }
-
-    public void setBirthDay(String day, String month, String year) {
-        this.day = day;
-        this.month = month;
-        this.year = year;
-    }
-
-    public String birthDay() {
-        String birth;
-        birth = day + "/" + month + "/" + year;
-        return birth;
-    }
-
 }

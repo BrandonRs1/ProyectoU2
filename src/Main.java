@@ -1,29 +1,30 @@
-import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Main {
-    /*
-    CRUD
-    Create
-    Read
-    Update
-    Delete
-     */
     public static void main(String[] args) {
-        Scanner leer = new Scanner(System.in);
-        Controller principalController = new Controller();
+        Scanner scanner = new Scanner(System.in);
+
+        Auxiliar auxiliar = new Auxiliar();
+        AdministratorController administratorController = new AdministratorController();
+
         Seeder seeder = new Seeder();
-        seeder.seeder();
-        /*
-        Fechas dadas por el sistema
-        Cumpleaños dados por el usuario
-         */
-        Date date = new Date();
-        System.out.printf(date.currentDate());
-        int menuOption;
+        seeder.initialize();
+
+        int option = 0;
         do {
-            menuOption = principalController.menuPrincipal();
-            principalController.switchPrincipal(menuOption);
-        } while (menuOption != 5);
+            System.out.print("Username: ");
+            String userName = Auxiliar.ReadStringData(scanner);
+            if (auxiliar.checkUserLog(userName)) {
+                System.out.print("Password: ");
+                String password = Auxiliar.ReadStringData(scanner);
+                if (User.checkPassword(password, auxiliar.getUSer(userName))) {
+                    option = administratorController.mainMenu(auxiliar.isAdmin(userName), userName);
+                } else {
+                    System.out.print("Invalid password\n");
+                }
+            } else {
+                System.out.print("Invalid user\n");
+            }
+        } while (option != 10);
     }
 }

@@ -1,24 +1,18 @@
 import java.util.ArrayList;
 
-public class Client {
-    private Profile profile;
-    private Date birthDate;
+public class Client extends User {
     private ArrayList<Book> borrowedBooks = new ArrayList<>();
-
+/*
     public Profile getProfile() {
         return profile;
     }
 
     public void setProfile(Profile profile) {
         this.profile = profile;
-    }
+    }*/
 
-    public Date getBirthDate() {
-        return birthDate;
-    }
-
-    public void setBirthDate(Date birthDate) {
-        this.birthDate = birthDate;
+    public Client(Profile profile, String username, String password) {
+        super(profile, username, password);
     }
 
     public ArrayList<Book> getBorrowedBooks() {

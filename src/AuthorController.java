@@ -2,241 +2,228 @@ import java.util.Scanner;
 
 public class AuthorController {
     Scanner leer = new Scanner(System.in);
-    static AuthorRepository authorRepository = new AuthorRepository();
+    ProfileController profileController = new ProfileController();
 
-    static boolean addBook;
-    private String autBook;
-
-    public int authorMenu() {
-        int option;
-        System.out.printf("---- Author menu ----%n");
-        System.out.printf(" --- Select an option ---%n" +
-                "1) Add new author%n" +
-                "2) Delete author%n" +
+    /**
+     * Main menu of authors
+     *
+     * @return the option that the user chosen
+     */
+    public String AuthorMenu(Administrator administrator) {
+        String authorMenuOption;
+        System.out.printf("%n >>>> Authors menu <<<<%n");
+        Auxiliar.createMenu(administrator);
+        /*System.out.printf("Select an option%n" +
+                "1) Add an author%n" +
+                "2) See authors%n" +
                 "3) Edit author info%n" +
-                "4) Show authors%n" +
-                "5) Menu principal%n" +
-                ">> Select an option: ");
-        option = leer.nextInt();
-        return option;
+                "4) Delete author%n" +
+                "Option: ");
+
+         */
+        System.out.print("Option: ");
+        authorMenuOption = Auxiliar.ReadStringData(leer);
+        for (Permission permis : administrator.getPermissions()) {
+            if (!authorMenuOption.equalsIgnoreCase(String.valueOf(permis))) {
+                System.out.print("Invalid option\n");
+                authorMenuOption = "a";
+            }
+        }
+        return authorMenuOption;
     }
 
-    public void switchAuthors(int option) {
-        switch (option) {
-            case 1 -> {//Add
-                System.out.printf("%n---- Add author----%n");
-                System.out.printf("Author name: ");
-                String name = leer.next();
-                System.out.printf("Author last name: ");
-                String lastName = leer.next();
-                System.out.printf("Author Birth day%n");
-                System.out.printf("Day: ");
-                String birthDaY = leer.next();
-                System.out.printf("Month: ");
-                String birthMonth = leer.next();
-                System.out.printf("Year: ");
-                String birthyear = leer.next();
-
-                Date birthDate = new Date();
-                birthDate.setBirthDay(birthDaY, birthMonth, birthyear);
-
-                Profile profile = new Profile(name, lastName, birthDate);
-                Author author = new Author();
-                author.setProfile(profile);
-                authorRepository.setAuthors(author);
-
+    /**
+     * Is the switch of the main menu of authors
+     *
+     * @param authorOption is the option that was chosen by the user
+     */
+    public void authorSwitch(String authorOption) {
+        switch (authorOption) {
+            case "write" -> //Add
+                    this.addAuthor();
+            case "read" -> //See
+                    showAuthorArrayList();
+            case "edit" -> {//Edit
+                this.editAuthorInfo();
+                showAuthorArrayList();
             }
-            case 2 -> {//Delete
-                if (authorRepository.getAuthors().isEmpty()) {
-                    System.out.printf("There are not authors to eliminate% n");
+            case "deete" -> {//Delete
+                this.deleteAuthor();
+                showAuthorArrayList();
+            }
+        }
+    }
+
+    /**
+     * Add a new author to the arrayLis
+     */
+    private void addAuthor() {
+        Profile profile;
+        System.out.printf(" >>> Add a new author <<<%n");
+        System.out.printf("Author info %n");
+        profile = profileController.createProfile();
+        System.out.print("Profile created\n");
+        Author author = new Author();
+        author.setProfile(profile);
+        AuthorRepository.authors.add(author); //Add author
+        System.out.print("Actual authors list\n");
+        showAuthorArrayList();
+    }
+
+    /**
+     * Method using to edit the info of an author
+     */
+    private void editAuthorInfo() {
+        if (AuthorRepository.authors.isEmpty()) {
+            System.out.print("There are not author registered\n");
+        } else {
+            showAuthorArrayList();
+            System.out.printf(" >>> Edit author info <<<%n");
+            System.out.print("Author name: ");
+            String nameEdit = Auxiliar.ReadStringData(leer);
+            System.out.print("Author last name: ");
+            String lastNameEdit = Auxiliar.ReadStringData(leer);
+            int position = getAuthor(nameEdit, lastNameEdit);
+            if (position != -1) {
+                System.out.printf("What would you like to edit of %s%n", AuthorRepository.authors.get(position).getProfile().getName());
+                System.out.printf("1) Name%n" +
+                        "2) Last name%n" +
+                        "3) Birth date%n" +
+                        "4) Books%n%n" +
+                        "Option: ");
+                int editOption = Auxiliar.ReadIntData(leer);
+                if (editOption == 4) {
+                    this.editBooks(position);
+                } else if (editOption > 0 && editOption <= 3) {
+                    profileController.editAuthorProfile(editOption, position);
                 } else {
-                    for (int i = 0; i < authorRepository.getAuthors().size(); i++) {
-                        Author authori = (Author) AuthorController.authorRepository.getAuthors().get(i);
+                    System.out.print("Invalid option\n");
+                }
+            } else {
+                System.out.print("Author did not find\n");
+            }
+        }
+    }
 
-                        if (authori.getAuthorBooks().isEmpty()) {
-                            autBook = "No books registrated yet";
+    /**
+     * Method using to show the authors and the books that they have
+     */
+    public static void showAuthorArrayList() {
+        if (AuthorRepository.authors.isEmpty()) {
+            System.out.printf("No registered authors%n");
+        } else {
+            System.out.print("\n\n---- Authors ----");
+            System.out.printf("-----------------------%n");
+            System.out.printf("|%-15s|%-20s|%-20s|%-20s|%n", "Author name", "Author last name", "Author birth", "Books");
+            System.out.printf("-----------------------%n");
+            for (Author authorArray : AuthorRepository.authors) {
+                String authorBooks = getStringAuthorBooks(authorArray);
+                System.out.printf("|%-15s|%-20s|%-20s|%-20s|%n", authorArray.getProfile().getName(), authorArray.getProfile().getLastName(), authorArray.getProfile().getBirthDate().getStringBirthDate(), authorBooks);
+                System.out.printf("-----------------------%n");
+            }
+        }
+    }
 
-                        } else {
-                            autBook = "";
-                            Book auth = (Book) authori.getAuthorBooks().get(i);
-                            for (Book authorBooks : authori.getAuthorBooks()) {
-                                autBook += authorBooks.getTitle() + "\n///////////////////////////////";
+    /**
+     * Method using to eliminate an author
+     * We can´t eliminate an author if it has books
+     */
+    private void deleteAuthor() {
+        if (!AuthorRepository.authors.isEmpty()) {
+            showAuthorArrayList();
+            System.out.print("Name of author to eliminate: ");
+            String nameDelete = Auxiliar.ReadStringData(leer);
+            System.out.print("Last name of author to eliminate: ");
+            String lastNameDelete = Auxiliar.ReadStringData(leer);
+            int authorDelete = getAuthor(nameDelete, lastNameDelete);
+            if (AuthorRepository.authors.get(authorDelete).getBooks().isEmpty()) {
+                AuthorRepository.authors.remove(authorDelete);
+                System.out.print("Author eliminated\n");
+            } else {
+                System.out.print("Can not eliminate the author, it has books\n");
+            }
+        }
+    }
+
+    /**
+     * Get the books of an author this is using when we show the author array list
+     *
+     * @param authorArray is the array list of the authors
+     * @return the array list with the author name and the books that it has
+     */
+    private static String getStringAuthorBooks(Author authorArray) {
+        String books = "";
+        if (authorArray.getBooks().isEmpty()) {
+            books = "Not books registered";
+        } else {
+            for (Book authorBooks : authorArray.getBooks()) {
+                books += authorBooks.getTitle() + "\n/////////////////////////////////////////////////////";
+            }
+        }
+        return books;
+    }
+
+    /**
+     * Method using to find an author in the array list using its name
+     *
+     * @param name is the name of the author
+     * @return the position of the author in the array list
+     */
+    public static int getAuthor(String name, String lastName) {
+        int ind = -1;
+        for (int i = 0; i < AuthorRepository.authors.size(); i++) {
+            if (AuthorRepository.authors.get(i).getProfile().getName().equalsIgnoreCase(name) && AuthorRepository.authors.get(i).getProfile().getLastName().equalsIgnoreCase(lastName)) {
+                ind = i;
+            }
+        }
+        return ind;
+    }
+
+    /**
+     * Method using or edit books
+     *
+     * @param authorPosition is the position of the author in the array list
+     */
+    private void editBooks(int authorPosition) {
+        boolean delete = false;
+        if (AuthorRepository.authors.get(authorPosition).getBooks().isEmpty()) {
+            System.out.print("The author does not have books\n");
+        } else {
+            showAuthorArrayList();
+            System.out.printf("Delete a book: \n" +
+                    "1) Si%n" +
+                    "2) No%n" +
+                    "Option: ");
+            int option = Auxiliar.ReadIntData(leer);
+            if (option == 1) {
+                System.out.print("---- Author books ----");
+                System.out.printf("---------------------------------%n");
+                for (Book authorBooks : AuthorRepository.authors.get(authorPosition).getBooks()) {
+                    System.out.printf("|%-15s|%-15s|%n", "Title", "ISBN");
+                    System.out.printf("|%-15s|%-15s|%n", authorBooks.getTitle(), authorBooks.getIsbn());
+                    System.out.print("---------------------------------\n");
+                }
+                System.out.print("Book ISBN: ");
+                String bookIsbn = Auxiliar.ReadStringData(leer);
+                if (BookController.getBook(bookIsbn) != -1) {
+                    for (int i = 0; i <= AuthorRepository.authors.get(authorPosition).getBooks().size(); i++) {
+                        if (AuthorRepository.authors.get(authorPosition).getBooks().get(i).getIsbn().equalsIgnoreCase(bookIsbn)) {
+                            if (AuthorRepository.authors.get(authorPosition).getBooks().get(i).isAvaible()) {
+                                AuthorRepository.authors.get(authorPosition).getBooks().remove(i);
+                                delete = true;
                             }
                         }
-
-                        System.out.printf("%n    ---- Authors ----%n");
-                        System.out.printf("-----------------------------------------------%n");
-                        System.out.printf("| %-10s | %-15s | %-12s |%n", "Name", "Last name", "Books");
-                        System.out.printf("-----------------------------------------------%n");
-                        for (int j = 0; j < authorRepository.getAuthors().size(); j++) {
-                            Author authors;
-                            authors = (Author) authorRepository.getAuthors().get(i);
-                            System.out.printf("| %-10s | %-15s | %-12s |%n", authors.getProfile().getName(), authors.getProfile().getLastName(), autBook);
-                            System.out.printf("-----------------------------------------------%n");
-                        }
                     }
-
-                    System.out.printf("Autor to delete (name): ");
-                    String nameToDelete = leer.next();
-                    for (int i = 0; i < authorRepository.getAuthors().size(); i++) {
-                        Author authors;
-                        authors = (Author) authorRepository.getAuthors().get(i);
-                        if (authors.getProfile().getName().equalsIgnoreCase(nameToDelete)) {
-                            if (authors.getAuthorBooks().isEmpty()) {
-                                if (authors.getAuthorBooks().isEmpty()) {
-                                    authorRepository.getAuthors().remove(i);
-                                    System.out.printf("Author eliminated succesfully%n");
-                                }
-                            } else {
-                                System.out.printf("Can not eliminate author");
-                            }
-                        }
+                    if (delete) {
+                        BookRepository.books.remove(BookController.getBook(bookIsbn));
+                        System.out.print("Book deleted\n");
+                    } else {
+                        System.out.print("Book were borrow, can not eliminate\n");
                     }
-
-                    for (int i = 0; i < authorRepository.getAuthors().size(); i++) {
-                        Author authori = (Author) AuthorController.authorRepository.getAuthors().get(i);
-
-                        if (authori.getAuthorBooks().isEmpty()) {
-                            autBook = "No books registrated yet";
-                        } else {
-                            autBook = "";
-                            Book auth = (Book) authori.getAuthorBooks().get(i);
-                            for (Book authorBooks : authori.getAuthorBooks()) {
-                                autBook += authorBooks.getTitle() + "\n///////////////////////////////";
-                            }
-                        }
-
-                        System.out.printf("%n    ---- Authors ----%n");
-                        System.out.printf("-----------------------------------------------%n");
-                        System.out.printf("| %-10s | %-15s | %-12s |%n", "Name", "Last name", "Books");
-                        System.out.printf("-----------------------------------------------%n");
-                        for (int j = 0; j < authorRepository.getAuthors().size(); j++) {
-                            Author authors;
-                            authors = (Author) authorRepository.getAuthors().get(i);
-                            System.out.printf("| %-10s | %-15s | %-12s |%n", authors.getProfile().getName(), authors.getProfile().getLastName(), autBook);
-                            System.out.printf("-----------------------------------------------%n");
-                        }
-                    }
+                } else {
+                    System.out.print("Book did not found\n");
                 }
             }
-            case 3 -> {//Edit
-                if (authorRepository.getAuthors().isEmpty()) {
-                    System.out.printf("There are not authores to edit%n");
-                } else {
-                    System.out.printf("Which author want to edit");
-                    for (int i = 0; i < authorRepository.getAuthors().size(); i++) {
-                        Author authori = (Author) AuthorController.authorRepository.getAuthors().get(i);
-
-                        if (authori.getAuthorBooks().isEmpty()) {
-                            autBook = "No books registrated yet";
-                        } else {
-                            autBook = "";
-                            Book auth = (Book) authori.getAuthorBooks().get(i);
-                            for (Book authorBooks : authori.getAuthorBooks()) {
-                                autBook += authorBooks.getTitle() + "\n///////////////////////////////";
-                            }
-                        }
-
-                        System.out.printf("%n    ---- Authors ----%n");
-                        System.out.printf("-----------------------------------------------%n");
-                        System.out.printf("| %-10s | %-15s | %-12s |%n", "Name", "Last name", "Books");
-                        System.out.printf("-----------------------------------------------%n");
-                        for (int j = 0; j < authorRepository.getAuthors().size(); j++) {
-                            Author authors;
-                            authors = (Author) authorRepository.getAuthors().get(i);
-                            System.out.printf("| %-10s | %-15s | %-12s |%n", authors.getProfile().getName(), authors.getProfile().getLastName(), autBook);
-                            System.out.printf("-----------------------------------------------%n");
-                        }
-                    }
-                    System.out.printf("Author to edit (name): ");
-                    String authorToEdit = leer.next();
-
-                    System.out.printf("Select what to edit%n" +
-                            "1) Name%n" +
-                            "2) Last Name%n" +
-                            "3) Birth date%n" +
-                            "4) Books%n" +
-                            ">>Select an option: ");
-                    int editOption = leer.nextInt();
-                    switch (editOption) {
-                        case 1 -> {
-                            for (int i = 0; i < authorRepository.getAuthors().size(); i++) {
-                                Author authorEdit = (Author) authorRepository.getAuthors().get(i);
-                                if (authorEdit.getProfile().getName().equalsIgnoreCase(authorToEdit)) {
-                                    System.out.printf("Edit name of: %s" + authorEdit.getProfile().getName());
-                                    System.out.printf("Name: ");
-                                    String newName = leer.next();
-                                    authorEdit.getProfile().setName(newName);
-                                } else {
-                                    System.out.printf("Author did not found%n");
-                                }
-                            }
-
-                        }
-                        case 2 -> {
-                            for (int i = 0; i < authorRepository.getAuthors().size(); i++) {
-                                Author authorEdit = (Author) authorRepository.getAuthors().get(i);
-                                if (authorEdit.getProfile().getLastName().equalsIgnoreCase(authorToEdit)) {
-                                    System.out.printf("Edit last name of: %s %s" + authorEdit.getProfile().getName(), authorEdit.getProfile().getLastName());
-                                    System.out.printf("Last name: ");
-                                    String newLastName = leer.next();
-                                    authorEdit.getProfile().setLastName(newLastName);
-                                } else {
-                                    System.out.printf("Author did not found%n");
-                                }
-                            }
-                        }
-                        case 3 -> {
-                            for (int i = 0; i < authorRepository.getAuthors().size(); i++) {
-                                Author authorEdit = (Author) authorRepository.getAuthors().get(i);
-                                if (authorEdit.getProfile().getName().equalsIgnoreCase(authorToEdit)) {
-                                    System.out.printf("Author birth day: %s %n", authorEdit.getProfile().getBirthDate().birthDay());
-                                    System.out.printf("New birth day%n");
-                                    System.out.printf("Day: ");
-                                    String newDay = leer.next();
-                                    System.out.printf("Month: ");
-                                    String newMonth = leer.next();
-                                    System.out.printf("Year: ");
-                                    String newYear = leer.next();
-                                    authorEdit.getProfile().getBirthDate().setBirthDay(newDay, newMonth, newYear);
-                                    System.out.printf("New author birth day: %s", authorEdit.getProfile().getBirthDate().birthDay());
-                                }
-                            }
-                        }
-                        case 4 -> {
-                            System.out.printf("Sorry, we still working in this funtion \uD83D\uDE23%n" +
-                                    "Try again latter, plis \uD83E\uDD7A");
-                        }
-                    }
-                }
-            }
-            case 4 -> {//Show
-                if (authorRepository.getAuthors().isEmpty()) {
-                    System.out.printf("There are not authors to show %n");
-                } else {
-                    System.out.printf("%n    ---- Authors ----%n");
-                    System.out.printf("-----------------------------------------------%n");
-                    System.out.printf("| %-10s | %-15s | %-12s |%n", "Name", "Last name", "Books");
-                    System.out.printf("-----------------------------------------------%n");
-                    for (int i = 0; i < authorRepository.getAuthors().size(); i++) {
-                        Author authori = (Author) AuthorController.authorRepository.getAuthors().get(i);
-
-                        if (authori.getAuthorBooks().isEmpty()) {
-                            autBook = "No books registrated yet";
-                        } else {
-                            autBook = "";
-                            //Book auth = (Book) authori.getAuthorBooks().get(i);
-                            for (Book authorBooks : authori.getAuthorBooks()) {
-                                autBook += authorBooks.getTitle() + "\n///////////////////////////////";
-                            }
-                        }
-                        Author authors;
-                        authors = (Author) authorRepository.getAuthors().get(i);
-                        System.out.printf("| %-10s | %-15s | %-12s |%n", authors.getProfile().getName(), authors.getProfile().getLastName(), autBook);
-                        System.out.printf("-----------------------------------------------%n");
-                    }
-                }
-            }//case 4
-        }//Switch
-    }//SwitchAutors //
+        }
+    }
 }
