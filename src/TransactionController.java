@@ -1,154 +1,156 @@
-import java.util.Scanner;
 import java.util.Random;
+import java.util.Scanner;
 
-public class TransactionController {
-    Scanner leer = new Scanner(System.in);
+public class TransactionController implements ControllerCom, Controller {
+    Colors color = new Colors();
+    ConsoleReader reader = new ConsoleReader();
+    ClientController client = new ClientController();
+    BookController bookCont = new BookController();
     Random random = new Random();
-
-    /**
-     * Main menu of transactions
-     *
-     * @return the option that te user chosen
-     */
-    public int transactionMenu() {
-        int transactionMenuOption;
-        System.out.printf("%n >>>> Transaction menu <<<<%n");
-        System.out.printf("Select an option%n" +
-                "1) Borrow a book%n" +
-                "2) Return a book%n" +
-                "3) See report%n" +
-                "Option: ");
-        transactionMenuOption = Auxiliar.ReadIntData(leer);
-        return transactionMenuOption;
+    Scanner scanner = new Scanner(System.in);
+    @Override
+    public void execute() {
+        Menu transactionMenu = new Menu();
+        transactionMenu.addMenuItem(1, new MenuItem("Create transaction", this::create));
+        transactionMenu.addMenuItem(2, new MenuItem("Show transactions", this::getArray));
+        transactionMenu.display();
     }
 
-    public int clientTransactionMenu() {
-        int transactionMenuOption;
-        System.out.printf("%n >>>> Transaction menu <<<<%n");
-        System.out.printf("Select an option%n" +
-                "1) See report%n" +
-                "Option: ");
-        transactionMenuOption = Auxiliar.ReadIntData(leer);
-        if (transactionMenuOption == 1) {
-            this.clientUserReport();
-            transactionMenuOption = 0;
+    /**
+     * Method using to create a transaction
+     */
+    @Override
+    public void create() {
+        if (!UserRepository.users.isEmpty()) {
+            Menu transaction = new Menu();
+            transaction.addMenuItem(1, new MenuItem("Borrow a book", this::borrowBook));
+            transaction.addMenuItem(2, new MenuItem("Return a book", this::returnBook));
+
         } else {
-            System.out.print("Invalid option\n");
-            transactionMenuOption = 0;
-        }
-        return transactionMenuOption;
-    }
-
-    /**
-     * Is the main switch of transactions
-     *
-     * @param transactionOption is the option that the user chosen
-     */
-    public void transactionSwitch(int transactionOption) {
-        switch (transactionOption) {
-            case 1 -> this.borrowBook();
-            case 2 -> this.returnBook();
-            case 3 -> this.report();
+            System.out.print(color.getRed() + "ERROR: " + color.getReset() + "There are not users to borrow books\n");
         }
     }
 
     /**
-     * This method is for borrow a book
+     * No using method
      */
-    private void borrowBook() {
-        if (ClientRepository.clients.isEmpty()) {
-            System.out.print("There are not clients to borrow books\n");
-        } else if (BookRepository.books.isEmpty()) {
-            System.out.print("There are not books to borrow\n");
+    @Override
+    public void delete() {
+    }
+
+    /**
+     * No using method
+     */
+    @Override
+    public void edit() {
+    }
+
+    /**
+     * Method using to see the transactions historical
+     */
+    @Override
+    public void getArray() {
+        Menu getArrayMenu = new Menu();
+        getArrayMenu.addMenuItem(1, new MenuItem("Client report", this::report));
+        getArrayMenu.addMenuItem(2, new MenuItem("Client report", this::clientReport));
+        getArrayMenu.display();
+    }
+    public void clientReport(){
+        if (!TransactionRepository.transactions.isEmpty()){
+            System.out.print("Name: ");
+            String name = scanner.nextLine();
+            System.out.print("Lastname: ");
+            String last = scanner.nextLine();
+            ClientController client = null;
+            Client client1 = (Client) client.getUser(name, last);
+            System.out.printf("%s", "Client");
+            System.out.printf("| %-15 | %-15s | %-8s | %-12s%n" +
+                    "------------------------------------------------------------------%n", "Client", "Book", "Type", "Date");
+            for (Transactions transaction: TransactionRepository.transactions){
+                if (transaction.getClient().equals(client1)){
+                    System.out.printf("| %-15 | %-15s | %-8s | %-12s%n" +
+                            "------------------------------------------------------------------%n", transaction.getClient().getProfile().getName(), transaction.getBook().getTitle(), transaction.getType(), transaction.getDate().dateString());
+                }
+            }
         } else {
-            System.out.print("Select a book to borrow\n");
-            BookController.seeAvailableBooks();
-            System.out.print("Book isbn: ");
-            String borrowBook = Auxiliar.ReadStringData(leer);
-            int borrowBookPosition = BookController.getBook(borrowBook);
-            if (borrowBookPosition != -1) {
-                System.out.print("Choose the client\n");
-                ClientController.clientsToBorrowBooks();
-                System.out.print("Client name: ");
-                String clientBorrowBook = Auxiliar.ReadStringData(leer);
-                System.out.print("Client last name: ");
-                String clientBorrowBookLastName = Auxiliar.ReadStringData(leer);
-                int clientBorrowBookPosition = ClientController.getClient(clientBorrowBook, clientBorrowBookLastName);
-                if (clientBorrowBookPosition != -1) {
+            System.out.print(color.getRed() + "ERROR: " + color.getReset() + "Client does not have transactions\n");
+        }
+    }
+    public void report(){
+        if (!TransactionRepository.transactions.isEmpty()){
+            System.out.printf("%s", "Client");
+            System.out.printf("| %-15 | %-15s | %-8s | %-12s%n" +
+                    "------------------------------------------------------------------%n", "Client", "Book", "Type", "Date");
+            for (Transactions trans: TransactionRepository.transactions){
+                System.out.printf("| %-15 | %-15s | %-8s | %-12s%n" +
+                        "------------------------------------------------------------------%n", trans.getClient().getProfile().getName(), trans.getBook().getTitle(), trans.getType(), trans.getDate().dateString());
+            }
+        } else {
+            System.out.print(color.getRed() + "ERROR: " + color.getReset() + "Client does not have transactions\n");
+        }
+    }
+    public void borrowBook() {
+        client.getArray();
+        Book book = null;
+        System.out.println("Client to borrow book");
+        StringValidator nameValidator = (value) -> !value.isEmpty();
+        String name = reader.readString("Name", nameValidator);
 
-                    BookRepository.books.get(borrowBookPosition).setAvaible(false);
+        StringValidator lastValidator = (value) -> !value.isEmpty();
+        String lastName = reader.readString("Last name", lastValidator);
 
-                    ClientRepository.clients.get(clientBorrowBookPosition).setBorrowedBooks(BookRepository.books.get(borrowBookPosition));
+        if (client.getUser(name, lastName) != null) {
+            String isbn;
 
-                    Date date = new Date();
-                    date.setBorrowDate();
-                    Transaction transaction = new Transaction();
-                    transaction.setBook(BookRepository.books.get(borrowBookPosition));
-                    transaction.setClient(ClientRepository.clients.get(clientBorrowBookPosition));
-                    String id = this.generateId();
-                    transaction.setId(id);
-                    transaction.setDate(date);
-                    transaction.setType("Borrow");
+            StringValidator isbnValidator = (value) -> !value.isEmpty();
+            isbn = reader.readString("ISBN of the book to delete", isbnValidator);
 
-                    TransactionRepository.Transactions.add(transaction);
-
-                    System.out.printf("Client %s has the book %s \n", ClientRepository.clients.get(clientBorrowBookPosition).getProfile().getName(), BookRepository.books.get(borrowBookPosition).getTitle());
-                } else {
-                    System.out.print("Client did not found\n");
+            for (Book books : BookRepository.books) {
+                if (books.getIsbn().equals(isbn)) {
+                    book = books;
+                }
+            }
+            if (book != null) {
+                for (User client1 : UserRepository.users) {
+                    if (client1 instanceof Client) {
+                        ((Client) client1).setBorrowedBooks(book);
+                        book.setAvailable(false);
+                        Date date = null;
+                        date.setBorrowedDate();
+                        Transactions transactions = new Transactions(this.generateId(), "Borrow", (Client) client1, book, date);
+                        TransactionRepository.transactions.add(transactions);
+                    }
                 }
             } else {
-                System.out.print("Book did not found\n");
+                System.out.print(color.getRed() + "ERROR: " + color.getReset() + "Book did not found\n");
+            }
+
+        } else {
+            System.out.print(color.getRed() + "ERROR: " + color.getReset() + "Client did not found\n");
+        }
+    }
+    public void returnBook(){
+        String isbn;
+
+        bookCont.getBorrowedBooks();
+        StringValidator isbnValidator = (value) -> !value.isEmpty();
+        isbn = reader.readString("ISBN of the book to delete", isbnValidator);
+
+        if(bookCont.getBook(isbn) != null){
+            for (Book books: BookRepository.books){
+                if (books.getIsbn().equals(isbn)){
+                    for (User client3: UserRepository.users){
+                        if (client3 instanceof Client){
+                            ((Client) client3).getBorrowedBooks().remove(books);
+                            Date date = null;
+                            Transactions transactions = new Transactions(this.generateId(), "Borrow", (Client) client3, books, date);
+                            TransactionRepository.transactions.add(transactions);
+                        }
+                    }
+                }
             }
         }
     }
-
-    /**
-     * This method is using to return a book that has been borrowed
-     */
-    private void returnBook() {
-        System.out.print("Book to return\n");
-        System.out.print("   ---- Books borrowed ----\n");
-        System.out.printf("------------------------------------------------------------%n");
-        System.out.printf("|%-15s|%-30s|%-7s|%-15s|%n", "Client", "Borrow date", "Transaction ID", "Book(s)");
-        System.out.printf("------------------------------------------------------------%n");
-        for (Transaction borrowedBooks : TransactionRepository.Transactions) {
-            String books = getStringClientBorrowedBooks(borrowedBooks.getClient());
-            System.out.printf("|%-15s|%-30s|%-7s|%-15s|%n", borrowedBooks.getClient().getProfile().getName(), borrowedBooks.getDate().getBorrowDate(), borrowedBooks.getId(), books);
-            System.out.printf("------------------------------------------------------------%n");
-        }
-        System.out.print("Select transaction id: ");
-        String transactionId = Auxiliar.ReadStringData(leer);
-
-        int transactionPosition = getTransaction(transactionId);
-        if (transactionPosition != -1) {
-            int bookPosition = BookController.getBook(TransactionRepository.Transactions.get(transactionPosition).getBook().getIsbn());
-            int clientPosition = ClientController.getClient(TransactionRepository.Transactions.get(transactionPosition).getClient().getProfile().getName(), TransactionRepository.Transactions.get(transactionPosition).getClient().getProfile().getLastName());
-            int bookClientPosition = bookClientPosition(BookRepository.books.get(bookPosition).getIsbn(), clientPosition);
-
-            BookRepository.books.get(bookPosition).setAvaible(true);
-            ClientRepository.clients.get(clientPosition).getBorrowedBooks().remove(bookClientPosition);
-
-            Date date = new Date();
-            date.setBorrowDate();
-
-            Transaction transaction = new Transaction();
-            transaction.setId(transactionId + " Ret");
-            transaction.setBook(BookRepository.books.get(bookPosition));
-            transaction.setDate(date);
-            transaction.setType("Return");
-            transaction.setClient(ClientRepository.clients.get(clientPosition));
-            TransactionRepository.Transactions.add(transaction);
-            System.out.print("Book was returned\n");
-        } else {
-            System.out.print("Transaction did not found\n");
-        }
-    }
-
-    /**
-     * This method is used to create the id for the transactions
-     *
-     * @return the id created
-     */
     private String generateId() {
         String id = "";
         boolean rep = false;
@@ -158,8 +160,8 @@ public class TransactionController {
                 String ids = String.valueOf(ran);
                 id += ids;
             }
-            if (!TransactionRepository.Transactions.isEmpty()) {
-                for (Transaction transactionId : TransactionRepository.Transactions) {
+            if (!TransactionRepository.transactions.isEmpty()) {
+                for (Transactions transactionId : TransactionRepository.transactions) {
                     if (transactionId.getId().equalsIgnoreCase(id)) {
                         id = generateId();
                         rep = true;
@@ -172,168 +174,5 @@ public class TransactionController {
             }
         }
         return id;
-    }
-
-    /**
-     * This method is using to get the transaction to return a book
-     *
-     * @param id is the id of the transaction
-     * @return the position of the transaction in the array list
-     */
-    private int getTransaction(String id) {
-        int transactionPosition = -1;
-        for (int i = 0; i < TransactionRepository.Transactions.size(); i++) {
-            if (TransactionRepository.Transactions.get(i).getId().equalsIgnoreCase(id)) {
-                transactionPosition = i;
-            }
-        }
-        return transactionPosition;
-    }
-
-    /**
-     * Method to get the books that the client has
-     *
-     * @param clientsArray is the client that we want to get the books
-     * @return a string with the books and the isbn of them
-     */
-    private static String getStringClientBorrowedBooks(Client clientsArray) {
-        String books = "";
-        if (clientsArray.getBorrowedBooks().isEmpty()) {
-            books = "Not books borrowed";
-        } else {
-            for (Book clientBooks : clientsArray.getBorrowedBooks()) {
-                books += clientBooks.getTitle() + "\n//////////////////////////////////////////////////////|";
-            }
-        }
-        return books;
-    }
-
-    /**
-     * This method is using to get the position of a book in the client arrayList
-     *
-     * @param isbn is the isbn of the book
-     * @return the position of the book in the array list of the client
-     */
-    private static int bookClientPosition(String isbn, int clientPosition) {
-        int bookPosition = -1;
-        for (int i = 0; i < ClientRepository.clients.get(clientPosition).getBorrowedBooks().size(); i++) {
-            if (ClientRepository.clients.get(clientPosition).getBorrowedBooks().get(i).getIsbn().equalsIgnoreCase(isbn)) {
-                bookPosition = i;
-            }
-        }
-        return bookPosition;
-    }
-
-    /**
-     * This method is the menu of report
-     */
-    private void report() {
-        System.out.print("Select an option\n" +
-                "1) All movements\n" +
-                "2) Book movements\n" +
-                "3) Client movements\n" +
-                "Option: ");
-        int reportOption = Auxiliar.ReadIntData(leer);
-        switch (reportOption) {
-            case 1 -> this.generalReport();
-            case 2 -> this.bookReport();
-            case 3 -> this.clientReport();
-        }
-    }
-
-    /**
-     * This method is using to see a general report of all the transactions
-     */
-    private void generalReport() {
-        if (!TransactionRepository.Transactions.isEmpty()) {
-            System.out.print("  ---- Report ----\n");
-            System.out.printf("------------------------------------------------------------%n");
-            System.out.printf("|%-7s|%-15s|%-15s|%-12s|%-30s|%n", "Movement", "Book", "Client", "Movement ID", "Date");
-            System.out.printf("------------------------------------------------------------%n");
-            for (Transaction transactions : TransactionRepository.Transactions) {
-                System.out.printf("|%-7s|%-15s|%-15s|%-12s|%-30s|%n", transactions.getType(), transactions.getBook().getTitle(), transactions.getClient().getProfile().getName(), transactions.getId(), transactions.getDate().getBorrowDate());
-                System.out.printf("------------------------------------------------------------%n");
-            }
-        } else {
-            System.out.print("There are not any movement registered yet\n");
-        }
-    }
-
-    /**
-     * This method is using to see the book report
-     */
-    private void bookReport() {
-        int moveCont = 0;
-        BookController.seeAllBooks();
-        System.out.print("Select book ISBN: ");
-        String bookReport = Auxiliar.ReadStringData(leer);
-        int position = BookController.getBook(bookReport);
-        if (position != -1) {
-            System.out.printf("  ---- %s report ----\n", BookRepository.books.get(position).getTitle());
-            System.out.printf("------------------------------------------------------------%n");
-            System.out.printf("|%-7s|%-15s|%-15s|%-12s|%-30s|%n", "Movement", "Book", "Client", "Movement ID", "Date");
-            System.out.printf("------------------------------------------------------------%n");
-            for (Transaction transactions : TransactionRepository.Transactions) {
-                if (transactions.getBook().getIsbn().equalsIgnoreCase(bookReport)) {
-                    System.out.printf("|%-7s|%-15s|%-15s|%-12s|%-30s|%n", transactions.getType(), transactions.getBook().getTitle(), transactions.getClient().getProfile().getName(), transactions.getId(), transactions.getDate().getBorrowDate());
-                    System.out.printf("------------------------------------------------------------%n");
-                    moveCont++;
-                }
-            }
-            if (moveCont == 0) {
-                System.out.print("No movements registered to this book yet\n");
-            }
-        } else {
-            System.out.print("Book did not found\n");
-        }
-    }
-
-    private void clientReport() {
-        ClientController.showClientArrayList();
-        int moveCont = 0;
-        System.out.print("Client name: ");
-        String clientName = Auxiliar.ReadStringData(leer);
-        System.out.print("Client last name: ");
-        String clientLast = Auxiliar.ReadStringData(leer);
-        int clientPosition = ClientController.getClient(clientName, clientLast);
-        if (clientPosition != -1) {
-            System.out.printf("  ---- %s report ----\n", ClientRepository.clients.get(clientPosition).getProfile().getName());
-            System.out.printf("------------------------------------------------------------%n");
-            System.out.printf("|%-7s|%-15s|%-15s|%-12s|%-30s|%n", "Movement", "Book", "Client", "Movement ID", "Date");
-            System.out.printf("------------------------------------------------------------%n");
-            for (Transaction transactions : TransactionRepository.Transactions) {
-                if (transactions.getClient().getProfile().getName().equalsIgnoreCase(clientName) && transactions.getClient().getProfile().getLastName().equalsIgnoreCase(clientLast)) {
-                    System.out.printf("|%-7s|%-15s|%-15s|%-12s|%-30s|%n", transactions.getType(), transactions.getBook().getTitle(), transactions.getClient().getProfile().getName(), transactions.getId(), transactions.getDate().getBorrowDate());
-                    System.out.printf("------------------------------------------------------------%n");
-                    moveCont++;
-                }
-            }
-            if (moveCont == 0) {
-                System.out.print("No movements registered to this book yet\n");
-            }
-        } else {
-            System.out.print("Client did not found\n");
-        }
-    }
-
-    private void clientUserReport() {
-        System.out.print("For security type the user name: ");
-        String userName = Auxiliar.ReadStringData(leer);
-        for (Client client : ClientRepository.clients) {
-            if (client.getUsername().equals(userName)) {
-                if (client.getBorrowedBooks().isEmpty()) {
-                    System.out.printf("There are not transactions");
-                } else {
-                    System.out.printf("  ---- %s report ----\n", client.getProfile().getName());
-                    System.out.printf("------------------------------------------------------------%n");
-                    System.out.printf("|%-7s|%-15s|%-15s|%-12s|%-30s|%n", "Movement", "Book", "Client", "Movement ID", "Date");
-                    System.out.printf("------------------------------------------------------------%n");
-                    for (Transaction transactions : TransactionRepository.Transactions) {
-                        System.out.printf("|%-7s|%-15s|%-15s|%-12s|%-30s|%n", transactions.getType(), transactions.getBook().getTitle(), transactions.getClient().getProfile().getName(), transactions.getId(), transactions.getDate().getBorrowDate());
-                        System.out.printf("------------------------------------------------------------%n");
-                    }
-                }
-            }
-        }
     }
 }

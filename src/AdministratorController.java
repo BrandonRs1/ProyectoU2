@@ -1,268 +1,161 @@
 import java.util.Scanner;
 
-public class AdministratorController {
-    Scanner leer = new Scanner(System.in);
-    Auxiliar auxiliar = new Auxiliar();
-    ProfileController profileController = new ProfileController();
-    MainController mainController = new MainController();
+public class AdministratorController extends UserController implements Controller {
+    Colors color = new Colors();
+    static Scanner scanner = new Scanner(System.in);
+    static Auxiliary aux = new Auxiliary();
+    public static Administrator adm;
+
+    public static void mainMenu(Administrator admins) {
+        Menu mainMenu = new Menu();
+
+        Controller authorController = new AuthorController();
+        Controller clientController = new ClientController();
+        Controller bookController = new BookController();
+        Controller transactionController = new TransactionController();
+        Controller administratorController = new AdministratorController();
+        Controller log = () -> log();
+        mainMenu.addMenuItem(1, new MenuItem("Author Menu", authorController));
+        mainMenu.addMenuItem(2, new MenuItem("Client Menu", clientController));
+        mainMenu.addMenuItem(3, new MenuItem("Book Menu", bookController));
+        mainMenu.addMenuItem(4, new MenuItem("Transactions Menu", transactionController));
+        if (admins.isSuperAdmin()) {
+            mainMenu.addMenuItem(5, new MenuItem("Administrator Menu", administratorController));
+        }
+        mainMenu.addMenuItem(6, new MenuItem("Log out", log));
+        mainMenu.display();
+    }
+
+    public static void clientMenu(Client client) {
+        Menu clientMen = new Menu();
+        BookController cont = new BookController();
+        TransactionController tran = new TransactionController();
+        Controller transactionController = () -> tran.clientReport();
+        Controller bookController = () -> cont.showBooks();
+        clientMen.addMenuItem(1, new MenuItem("Show books", bookController));
+        clientMen.addMenuItem(2, new MenuItem("See transactions", transactionController));
+    }
+
+    @Override
+    public void execute() {
+        Menu adminMenu = new Menu();
+        for (Permissions perm : adm.getPermissions()) {
+            if (perm.toString().equalsIgnoreCase("WRITE")) {
+                adminMenu.addMenuItem(1, new MenuItem("Create administrator", this::create));
+                adminMenu.addMenuItem(2, new MenuItem("Edit administrator", this::edit));
+            }
+            if (perm.toString().equalsIgnoreCase("DELETE")) {
+                adminMenu.addMenuItem(3, new MenuItem("Delete administrator", super::delete));
+            }
+            if (perm.toString().equalsIgnoreCase("READ")) {
+                adminMenu.addMenuItem(4, new MenuItem("Show administrator", this::getArray));
+            }
+        }
+        adminMenu.display();
+    }
 
     /**
-     * This method is the main menu
-     *
-     * @return the option to log out or end the program
+     * This method is using to create administrators
      */
-    public int mainMenu(boolean isAdmin, String userName) {
-        int mainOption = 0;
-        System.out.print("Welcome\n");
-        do {
-            if (isAdmin) {
-                if (getAdministrator(userName).isSuperAdmin()) {
-                    int superAdmin = this.superMenu();
-                    this.superSwitch(superAdmin, getAdministrator(userName));
-                } else {
-                    mainOption = mainController.MainMenu();
-                    mainController.MainSwitch(mainOption, getAdministrator(userName));
-                }
+    @Override
+    public void create() {
+        System.out.println("User information");
+        Profile profile = profCon.createProfile();
+
+        StringValidator userNameValidator = (value) -> {
+            return !aux.checkPass(value);
+        };
+        String userName = reader.readString("UserName", userNameValidator);
+
+        StringValidator passwordValidator = (value) -> {
+            return value.length() >= 6 && value.length() <= 8;
+        };
+        String password = reader.readString("Password (6-8 characters)", passwordValidator);
+
+        Administrator admin = new Administrator(profile, userName, password, false);
+        super.addToArray(admin);
+    }
+
+    @Override
+    public void edit() {
+        if (!UserRepository.users.isEmpty()) {
+            this.getArray();
+            System.out.println("User to edit");
+            System.out.print("Name: ");
+            String name = scanner.nextLine();
+            System.out.print("Lastname: ");
+            String last = scanner.nextLine();
+            if (this.getUser(name, last) != null) {
+                Menu editMenu = new Menu();
+                Controller editName = () -> profCon.editName(this.getUser(name, last));
+                Controller editLast = () -> profCon.editLastName(this.getUser(name, last));
+                Controller editBirth = () -> profCon.editBirth(this.getUser(name, last));
+                Controller editPermissions = () -> this.editPermissions((Administrator) this.getUser(name, last));
+                editMenu.addMenuItem(1, new MenuItem("Edit name", editName));
+                editMenu.addMenuItem(2, new MenuItem("Edit lastname", editLast));
+                editMenu.addMenuItem(3, new MenuItem("Edit birth date", editBirth));
+                editMenu.addMenuItem(4, new MenuItem("Edit permissions ", editPermissions));
+                editMenu.display();
             } else {
-                int clientOption = mainController.clientMainMenu();
-                mainController.clientMainSwitch(clientOption);
-            }
-        } while (mainOption != 9);
-        System.out.print("Login out\n");
-        return mainOption;
-    }
-
-    /**
-     * This is the  main menu for the super administrator
-     *
-     * @return the option that the administrator chosen
-     */
-    private int superMenu() {
-        int superOption = 0;
-        System.out.print("  >>>> Menu <<<<\n");
-        System.out.print("""
-                Select an option
-                1) Books
-                2) Authors
-                3) Clients
-                4) Transactions
-                5) Administrators
-                9) Log out
-                10) Exit
-                Option:\s""");
-        superOption = Auxiliar.ReadIntData(leer);
-        return superOption;
-    }
-
-    /**
-     * this method is the option that the administrator chosen in the menu
-     *
-     * @param option is the option
-     */
-    private void superSwitch(int option, Administrator administrator) {
-        if (option == 5) {
-            System.out.printf("%n >>>> Administrator menu <<<<%n");
-            System.out.printf("Select an option%n" +
-                    "1) Add an administrator%n" +
-                    "2) See administrators%n" +
-                    "3) Edit administrator info%n" +
-                    "4) Edit administrator permissions%n" +
-                    "5) Delete administrator%n" +
-                    "Option: ");
-            String switchOption = Auxiliar.ReadStringData(leer);
-            switch (switchOption) {
-                case "add" -> this.addAdministrator();
-                case "see" -> this.showAdministratorArrayList();
-                case "edit info" -> this.editAdministratorInfo();
-                case "edit permissions" -> this.setPermissions(administrator);
-                case "delete" -> this.deleteAdmin();
+                System.out.print(color.getRed() + "ERROR: " + color.getReset() + "Administrator did not found\n");
             }
         } else {
-            mainController.MainSwitch(option, administrator);
+            System.out.print(color.getRed() + "ERROR: " + color.getReset() + "There are not users registered\n");
         }
     }
 
-    /**
-     * This method is using to add an admin
-     */
-    private void addAdministrator() {
-        Profile profile;
-        System.out.printf(" >>> Add a new administrator <<<%n");
-        System.out.printf("Administrator info %n");
-        profile = profileController.createProfile();
-        System.out.print("Profile created\n");
-
-        String userName = auxiliar.createUserName(profile);
-        System.out.printf("Administrator user name %s", userName);
-
-        System.out.print("Set password: ");
-        String password = Auxiliar.ReadStringData(leer);
-
-        Administrator administrator = new Administrator(profile, userName, password, false);
-        this.setPermissions(administrator);
-        AdministratorRepository.administrators.add(administrator);
-
-
-        System.out.print("Actual client list\n");
-        showAdministratorArrayList();
-    }
-
-    /**
-     * This method show all the administrators and their info
-     */
-    private void showAdministratorArrayList() {
-        if (AdministratorRepository.administrators.isEmpty()) {
-            System.out.printf("No registered clients%n");
-        } else {
-            System.out.print("\n\n---- Administrator ----");
-            System.out.printf("-----------------------%n");
-            System.out.printf("|%-15s|%-20s|%-15s|%-20s|%-20s|%n", "Administrator name", "Administrator last name", "Username", "Administrator birth", "Is super admin");
-            System.out.printf("-----------------------%n");
-            for (Administrator admin : AdministratorRepository.administrators) {
-                System.out.printf("|%-15s|%-20s|%-15s|%-20s|%-20s|%n", admin.getProfile().getName(), admin.getProfile().getLastName(), admin.getUsername(), admin.getProfile().getBirthDate().getStringBirthDate(), admin.isSuperAdmin());
-                System.out.printf("-----------------------%n");
-            }
+    public void editPermissions(Administrator administrator) {
+        System.out.println("Admin permissions");
+        administrator.getPermissions().clear();
+        IntegerValidator valOption = (value) -> value > 0 && value <= 2;
+        int option = reader.readInt("Admin can delete\n1)Yes\n2)No\nOption", valOption);
+        int option2 = reader.readInt("Admin can read\n1)Yes\n2)No\nOption", valOption);
+        int option3 = reader.readInt("Admin can write\n1)Yes\n2)No\nOption", valOption);
+        if (option == 1) {
+            administrator.setDelete();
+        }
+        if (option2 == 1) {
+            administrator.setRead();
+        }
+        if (option3 == 1) {
+            administrator.setWrite();
         }
     }
 
-    /**
-     * This method is using to edit the administrators info
-     */
-    private void editAdministratorInfo() {
-        if (AdministratorRepository.administrators.isEmpty()) {
-            System.out.print("There are not clients registered\n");
-        } else {
-            this.showAdministratorArrayList();
-            System.out.printf(" >>> Edit administrator info <<<%n");
-            System.out.print("Administrator name: ");
-            String nameEdit = Auxiliar.ReadStringData(leer);
-            System.out.print("Administrator last name: ");
-            String lastNameEdit = Auxiliar.ReadStringData(leer);
-            int position = getAdministratorByName(nameEdit, lastNameEdit);
-            if (position != -1) {
-                System.out.printf("What would you like to edit of %s%n", AdministratorRepository.administrators.get(position).getProfile().getName());
-                System.out.printf("1) Name%n" +
-                        "2) Last name%n" +
-                        "3) Birth date%n" +
-                        "Option: ");
-                int editOption = Auxiliar.ReadIntData(leer);
-                if (editOption > 0 && editOption <= 3) {
-                    profileController.editAdministratorProfile(editOption, position);
-                } else {
-                    System.out.print("Invalid option\n");
+    @Override
+    public void getArray() {
+        if (!UserRepository.users.isEmpty()) {
+            System.out.printf("%30s %n----------------------------------------------%n", "Administrators");
+            System.out.printf("| %-12s | %-12s | %-12s |%n", "Name", "Lastname", "Birth date");
+            for (User user : UserRepository.users) {
+                if (user instanceof Administrator) {
+                    System.out.printf("| %-12s | %-12s | %-12s |%n" +
+                            "----------------------------------------------%n", user.getProfile().getName(), user.getProfile().getLastName(), user.getProfile().getBirthDate().dateString());
                 }
-            } else {
-                System.out.print("Author did not find\n");
             }
-        }
-    }
-
-    private void deleteAdmin() {
-        if (!AdministratorRepository.administrators.isEmpty()) {
-            this.showAdministratorArrayList();
-            System.out.print("Name of administrator to eliminate: ");
-            String nameDelete = Auxiliar.ReadStringData(leer);
-            System.out.print("Last name of administrator to eliminate: ");
-            String lastNameDelete = Auxiliar.ReadStringData(leer);
-            int adminDelete = getAdministratorByName(nameDelete, lastNameDelete);
-            if (AdministratorRepository.administrators.get(adminDelete).isSuperAdmin() && AdministratorRepository.administrators.size() > 1) {
-                this.showAdministratorArrayList();
-                System.out.print("Choose another superAdmin: ");
-                System.out.print("Name: ");
-                String newSuper = Auxiliar.ReadStringData(leer);
-                System.out.print("Last name");
-                String newSuperLast = Auxiliar.ReadStringData(leer);
-                int newSuperInd = getAdministratorByName(newSuper, newSuperLast);
-                if (newSuperInd != -1) {
-                    AdministratorRepository.administrators.get(newSuperInd).setSuperAdmin(true);
-                    AdministratorRepository.administrators.remove(adminDelete);
-                } else {
-                    System.out.printf("Admin did not found could not delete super admin\n");
-                }
-            } else {
-                System.out.print("Can not eliminate the admin is the only super admin\n");
-            }
-        }
-        System.out.print("There are not admins to eliminate\n");
-    }
-
-    /**
-     * method to gen an administrator using the userName
-     *
-     * @param userName is the userName
-     * @return the position of the admin in the arraylist
-     **/
-    public static Administrator getAdministrator(String userName) {
-        Administrator admin = null;
-        for (Administrator admins : AdministratorRepository.administrators) {
-            if (admins.getUsername().equals(userName)) {
-                return admin = admins;
-            }
-        }
-        return admin;
-    }
-
-    /**
-     * This method is using to set the permissions that the admin has
-     *
-     * @param administrator is the administrator
-     */
-    private void setPermissions(Administrator administrator) {
-        if (administrator.getPermissions().isEmpty()) {
-            System.out.printf("The administrator does not have permissions\n");
         } else {
-            for (int i = 0; i < administrator.getPermissions().size(); i++) {
-                administrator.getPermissions().remove(i);
-            }
-            System.out.print("The administrator can read data of authors, books and clients: " +
-                    "1) Yes\n" +
-                    "2) No\n" +
-                    "Option: ");
-            int read = Auxiliar.ReadIntData(leer);
-            if (read == 1) {
-                administrator.setRead();
-            } else if (read != 2) {
-                System.out.print("Invalid option\n");
-            }
-
-            System.out.print("The administrator can delete of authors, books and clients: " +
-                    "1) Yes\n" +
-                    "2) No\n" +
-                    "Option: ");
-            int delete = Auxiliar.ReadIntData(leer);
-            if (delete == 1) {
-                administrator.setDelete();
-            } else if (delete != 2) {
-                System.out.print("Invalid option\n");
-            }
-
-            System.out.print("The administrator can write data of authors, books and clients: " +
-                    "1) Yes\n" +
-                    "2) No\n" +
-                    "Option: ");
-            int edit = Auxiliar.ReadIntData(leer);
-            if (edit == 1) {
-                administrator.setWrite();
-            } else if (edit != 2) {
-                System.out.print("Invalid option\n");
-            }
+            System.out.print(color.getRed() + "ERROR: " + color.getReset() + "Not users registered\n");
         }
     }
-
-    /**
-     * This method is using to ged the position of an admin using his name and last name
-     *
-     * @param name     is the name of the admin
-     * @param lastName is the last name of the admin
-     * @return the position of the admin in the arraylist
-     */
-    public static int getAdministratorByName(String name, String lastName) {
-        int ind = -1;
-        for (int i = 0; i < AdministratorRepository.administrators.size(); i++) {
-            if (AdministratorRepository.administrators.get(i).getProfile().getName().equalsIgnoreCase(name) && AdministratorRepository.administrators.get(i).getProfile().getLastName().equalsIgnoreCase(lastName)) {
-                ind = i;
+    public static void log(){
+        System.out.print("Username: ");
+        String userName = scanner.nextLine();
+        for (User user : UserRepository.users) {
+            if (user.getUserName().equals(userName)) {
+                System.out.print("Password: ");
+                String password = scanner.nextLine();
+                if (User.checkPassword(password, user)) {
+                    if (user instanceof Administrator) {
+                        AuthorController.adm = (Administrator) user;
+                        BookController.adm = (Administrator) user;
+                        AdministratorController.adm = (Administrator) user;
+                        AdministratorController.mainMenu((Administrator) user);
+                        ClientController.adm = (Administrator) user;
+                    } else {
+                        AdministratorController.clientMenu((Client) user);
+                    }
+                }
             }
         }
-        return ind;
     }
 }

@@ -3,20 +3,11 @@ public class Profile {
     private String lastName;
     private Date birthDate;
 
-    public Profile(String name, String lastName, Date birthDate) {
+    public Profile(String name, String lastName, Date date) {
         this.name = name;
         this.lastName = lastName;
-        this.birthDate = birthDate;
+        this.birthDate = date;
     }
-
-    public Date getBirthDate() {
-        return birthDate;
-    }
-
-    public void setBirthDate(Date birthDate) {
-        this.birthDate = birthDate;
-    }
-
     public String getName() {
         return name;
     }
@@ -31,5 +22,13 @@ public class Profile {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public Date getBirthDate() {
+        return birthDate;
+    }
+
+    public void setBirthDate(Date birthDate) {
+        this.birthDate = birthDate;
     }
 }

@@ -1,28 +1,12 @@
 import java.util.ArrayList;
 
-public class Administrator extends User {
-    private ArrayList<Permission> permissions1 = new ArrayList<>();
+public class Administrator extends User{
     private boolean isSuperAdmin;
+    private ArrayList<Permissions> permissions = new ArrayList<>();
 
-    public Administrator(Profile profile, String username, String password, boolean isSuperAdmin) {
-        super(profile, username, password);
+    public Administrator(Profile profile, String userName, String password, boolean isSuperAdmin) {
+        super(profile, userName, password);
         this.isSuperAdmin = isSuperAdmin;
-    }
-
-    public ArrayList<Permission> getPermissions() {
-        return permissions1;
-    }
-
-    public void setDelete() {
-        this.permissions1.add(Permission.DELETE);
-    }
-
-    public void setWrite() {
-        this.permissions1.add(Permission.WRITE);
-    }
-
-    public void setRead() {
-        this.permissions1.add(Permission.READ);
     }
 
     public boolean isSuperAdmin() {
@@ -31,5 +15,19 @@ public class Administrator extends User {
 
     public void setSuperAdmin(boolean superAdmin) {
         isSuperAdmin = superAdmin;
+    }
+
+    public ArrayList<Permissions> getPermissions() {
+        return permissions;
+    }
+
+    public void setDelete() {
+        this.permissions.add(Permissions.DELETE);
+    }
+    public void setWrite() {
+        this.permissions.add(Permissions.WRITE);
+    }
+    public void setRead() {
+        this.permissions.add(Permissions.READ);
     }
 }

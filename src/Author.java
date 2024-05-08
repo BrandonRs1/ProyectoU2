@@ -4,6 +4,9 @@ public class Author {
     private Profile profile;
     private ArrayList<Book> books = new ArrayList<>();
 
+    public Author(Profile profile) {
+        this.profile = profile;
+    }
 
     public Profile getProfile() {
         return profile;
@@ -13,11 +16,11 @@ public class Author {
         this.profile = profile;
     }
 
-    public void setBooks(Book book) {
-        books.add(book);
-    }
-
     public ArrayList<Book> getBooks() {
         return books;
+    }
+
+    public void setBooks(Book books) {
+        this.books.add(books);
     }
 }

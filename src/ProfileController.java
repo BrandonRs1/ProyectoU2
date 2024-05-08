@@ -1,102 +1,69 @@
-import java.util.Scanner;
-import java.util.function.DoubleFunction;
-
 public class ProfileController {
-    Scanner scanner = new Scanner(System.in);
+    ConsoleReader reader = new ConsoleReader();
 
-    /**
-     * Create profiles
-     *
-     * @return Profile is the profile with name, last name and birth date
-     */
     public Profile createProfile() {
-        System.out.print("Name: ");
-        String name = Auxiliar.ReadStringData(scanner);
-        System.out.print("Last name: ");
-        String lastName = Auxiliar.ReadStringData(scanner);
-        System.out.printf("Author birthdate %n");
-        Date date = new Date();
-        String birthDate = date.birthDate();
-        date.setBirthDate(birthDate);
-        Profile profile = new Profile(name, lastName, date);
-        return profile;
+        StringValidator nameValidator = (value) -> !value.isEmpty();
+        String name = reader.readString("Name", nameValidator);
+
+        StringValidator lastValidator = (value) -> !value.isEmpty();
+        String lastName = reader.readString("Last name", lastValidator);
+
+        System.out.println("Birth date");
+
+        IntegerValidator dayValidator = (value) -> value > 0 && value <= 31;
+        int day = reader.readInt("Day (DD)", dayValidator);
+
+        IntegerValidator monthValidator = (value) -> value > 0 && value <= 12;
+        int month = reader.readInt("Mes (MM)", monthValidator);
+
+        IntegerValidator yearValidator = (value) -> value > 999 && value <= 9999;
+        int year = reader.readInt("Year (YYYY)", yearValidator);
+
+        Date date = new Date(day, month, year);
+        return new Profile(name, lastName, date);
     }
 
-    /**
-     * This method is using to edit the info of an author
-     *
-     * @param option   is the option of what to edit
-     * @param position is the position of the author in the array list
-     */
-    public void editAuthorProfile(int option, int position) {
-        switch (option) {
-            case 1 -> {
-                System.out.print("New name: ");
-                String newName = Auxiliar.ReadStringData(scanner);
-                AuthorRepository.authors.get(position).getProfile().setName(newName);
-            }
-            case 2 -> {
-                System.out.print("New last name: ");
-                String newLastName = Auxiliar.ReadStringData(scanner);
-                AuthorRepository.authors.get(position).getProfile().setLastName(newLastName);
-            }
-            case 3 -> {
-                System.out.printf("New birth date%n");
-                Date newDate = new Date();
-                String date = newDate.birthDate();
-                newDate.setBirthDate(date);
-                AuthorRepository.authors.get(position).getProfile().setBirthDate(newDate);
-            }
+    public void editName(Object object) {
+        StringValidator nameValidator = (value) -> !value.isEmpty();
+        String name = reader.readString("Name", nameValidator);
+        if (object instanceof Author) {
+            ((Author) object).getProfile().setName(name);
+        } else if (object instanceof Client) {
+            ((Client) object).getProfile().setName(name);
+        } else if (object instanceof Administrator) {
+            ((Administrator) object).getProfile().setName(name);
         }
     }
 
-    /**
-     * This method is using to edit the clients info
-     *
-     * @param option   is the option of what to edit
-     * @param position is the position of the client in the array list
-     */
-    public void editClientProfile(int option, int position) {
-        switch (option) {
-            case 1 -> {
-                System.out.print("New name: ");
-                String newName = Auxiliar.ReadStringData(scanner);
-                ClientRepository.clients.get(position).getProfile().setName(newName);
-            }
-            case 2 -> {
-                System.out.print("New last name: ");
-                String newLastName = Auxiliar.ReadStringData(scanner);
-                ClientRepository.clients.get(position).getProfile().setLastName(newLastName);
-            }
-            case 3 -> {
-                System.out.printf("New birth date%n");
-                Date newDate = new Date();
-                String date = newDate.birthDate();
-                newDate.setBirthDate(date);
-                ClientRepository.clients.get(position).getProfile().setBirthDate(newDate);
-            }
+    public void editLastName(Object object) {
+        StringValidator lastValidator = (value) -> !value.isEmpty();
+        String lastName = reader.readString("Last name", lastValidator);
+        if (object instanceof Author) {
+            ((Author) object).getProfile().setLastName(lastName);
+        } else if (object instanceof Client) {
+            ((Client) object).getProfile().setLastName(lastName);
+        } else if (object instanceof Administrator) {
+            ((Administrator) object).getProfile().setLastName(lastName);
         }
     }
 
-    public void editAdministratorProfile(int option, int position) {
-        switch (option) {
-            case 1 -> {
-                System.out.print("New name: ");
-                String newName = Auxiliar.ReadStringData(scanner);
-                AdministratorRepository.administrators.get(position).getProfile().setName(newName);
-            }
-            case 2 -> {
-                System.out.print("New last name: ");
-                String newLastName = Auxiliar.ReadStringData(scanner);
-                AdministratorRepository.administrators.get(position).getProfile().setLastName(newLastName);
-            }
-            case 3 -> {
-                System.out.printf("New birth date%n");
-                Date newDate = new Date();
-                String date = newDate.birthDate();
-                newDate.setBirthDate(date);
-                AdministratorRepository.administrators.get(position).getProfile().setBirthDate(newDate);
-            }
+    public void editBirth(Object object) {
+        IntegerValidator dayValidator = (value) -> value > 0 && value <= 31;
+        int day = reader.readInt("Day (DD)", dayValidator);
+
+        IntegerValidator monthValidator = (value) -> value > 0 && value <= 12;
+        int month = reader.readInt("Mes (MM)", monthValidator);
+
+        IntegerValidator yearValidator = (value) -> value > 999 && value <= 9999;
+        int year = reader.readInt("Year (YYYY)", yearValidator);
+
+        Date date = new Date(day, month, year);
+        if (object instanceof Author) {
+            ((Author) object).getProfile().setBirthDate(date);
+        } else if (object instanceof Client) {
+            ((Client) object).getProfile().setBirthDate(date);
+        } else if (object instanceof Administrator) {
+            ((Administrator) object).getProfile().setBirthDate(date);
         }
     }
 }

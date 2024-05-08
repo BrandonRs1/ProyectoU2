@@ -1,307 +1,263 @@
 import java.util.Scanner;
 
-public class BookController {
-    Scanner leer = new Scanner(System.in);
+public class BookController implements ControllerCom, Controller {
+    ConsoleReader reader = new ConsoleReader();
+    Colors color = new Colors();
+    Scanner scanner = new Scanner(System.in);
+    AuthorController authCon;
+    public static Administrator adm;
 
-    /**
-     * is the main menu of books
-     *
-     * @return the option that the user chosen
-     */
-    public String bookMenu(Administrator administrator) {
-        String bookMenuOption;
-        System.out.printf("%n >>>> Books menu <<<<%n");
-        Auxiliar.createMenu(administrator);
-        /*System.out.printf("Select an option%n" +
-                "1) New book%n" +
-                "2) See books%n" +
-                "3) Edit book info%n" +
-                "4) Delete book%n" +
-                */
-        System.out.print("Option: ");
-        bookMenuOption = Auxiliar.ReadStringData(leer);
-        for (Permission permission : administrator.getPermissions()) {
-            if (!bookMenuOption.equalsIgnoreCase(String.valueOf(permission))) {
-                System.out.printf("Invalid option\n");
-                bookMenuOption = "a";
+    @Override
+    public void execute() {
+        Menu bookMenu = new Menu();
+        boolean write = false;
+
+        for (Permissions perm : adm.getPermissions()) {
+            if (perm.toString().equalsIgnoreCase("WRITE")) {
+                bookMenu.addMenuItem(1, new MenuItem("Create book", this::create));
+                bookMenu.addMenuItem(2, new MenuItem("Edit book", this::edit));
+            }
+            if (perm.toString().equalsIgnoreCase("DELETE")) {
+                bookMenu.addMenuItem(3, new MenuItem("Delete book", this::delete));
+            }
+            if (perm.toString().equalsIgnoreCase("READ")) {
+                bookMenu.addMenuItem(4, new MenuItem("Show book", this::showBooks));
             }
         }
-        return bookMenuOption;
+        bookMenu.display();
     }
 
     /**
-     * This is the menu of the clients and the option that we can choose of them
-     *
-     * @return the election or an error
+     * Method using to create books and add´em to the arrayList
      */
-    public String clientBookMenu() {
-        String bookMenuOption;
-        System.out.printf("%n >>>> Books menu <<<<%n");
-        System.out.printf("Select an option%n" +
-                "1) See books%n" +
-                "Option: ");
-        bookMenuOption = Auxiliar.ReadStringData(leer);
-        if (Integer.parseInt(bookMenuOption) == 1) {
-            bookMenuOption = "read";
+    @Override
+    public void create() {
+        if (!AuthorRepository.authors.isEmpty()) {
+            String isbn;
+
+            System.out.println("Book information");
+
+            StringValidator titleValidator = (value) -> !value.isEmpty();
+            String title = reader.readString("Book title", titleValidator);
+
+            StringValidator isbnValidator = (value) -> {
+                for (int i = 0; i < value.length(); i++) {
+                    return Character.isDigit(value.charAt(i));
+                }
+                return false;
+            };
+
+            isbn = reader.readString("ISBN", isbnValidator);
+
+            System.out.println("Book publish date");
+
+            IntegerValidator dayValidator = (value) -> value > 0 && value <= 31;
+            int day = reader.readInt("Day (DD)", dayValidator);
+
+            IntegerValidator monthValidator = (value) -> value > 0 && value <= 12;
+            int month = reader.readInt("Mes (MM)", monthValidator);
+
+            IntegerValidator yearValidator = (value) -> value > 999 && value <= 9999;
+            int year = reader.readInt("Year (YYYY)", yearValidator);
+
+            authCon.getArray();
+            System.out.print("Choose an author");
+
+            StringValidator nameValidator = (value) -> !value.isEmpty();
+            String name = reader.readString("Name", nameValidator);
+
+            StringValidator lastValidator = (value) -> !value.isEmpty();
+            String lastName = reader.readString("Last name", lastValidator);
+
+            if(authCon.getAuthor(name, lastName) != null) {
+                Date date = new Date(day, month, year);
+                Book book = new Book(title, isbn, date, authCon.getAuthor(name, lastName), true);
+                this.addToArray(book);
+            } else {
+                System.out.print(color.getRed() + "ERROR: " + color.getReset() + "Author did not found\n");
+            }
         } else {
-            System.out.print("Invalid option\n");
-            bookMenuOption = "a";
+            System.out.print(color.getRed() + "ERROR: " + color.getReset() + "There are not authors\n");
         }
-        return bookMenuOption;
     }
 
     /**
-     * This method is the switch of the main menu of books
+     * Method using to delete books
+     */
+    @Override
+    public void delete() {
+        if (!BookRepository.books.isEmpty()) {
+            String isbn;
+            StringValidator isbnValidator = (value) -> !value.isEmpty();
+            isbn = reader.readString("ISBN of the book to delete", isbnValidator);
+            if (!reader.confirmIsbn(isbn)) {
+                System.out.println("Book did not found");
+            } else {
+                BookRepository.books.remove(this.getBook(isbn));
+            }
+        } else {
+            System.out.print(color.getRed() + "ERROR: " + color.getReset() + "There are not books\n");
+        }
+    }
+
+    /**
+     * This method is using to add a book to the arrayList
      *
-     * @param boookOption is the option of the switch that was chosen
+     * @param book is the book that we are adding
      */
-    public void bookSwitch(String boookOption) {
-        switch (boookOption) {
-            case "write" ->//Create
-                    this.addBook();
-            case "read" -> {//See
-                this.seeBooks();
-            }
-            case "edit" -> {//Edit
-                this.editBookInfo();
-            }
-            case "delete" -> {//Delete
-                this.deleteBook();
-            }
-        }
-    }
-
-    private void addBook() {
-        if (AuthorRepository.authors.isEmpty()) {
-            System.out.print("There are not authors, create an author first\n");
-        } else {
-            System.out.print(" >>> Add a new book <<<\n");
-            System.out.print("Title of the book: ");
-            String title = Auxiliar.ReadStringData(leer);
-            System.out.print("Isbn of the book: ");
-            String isbn = Auxiliar.ReadStringData(leer);
-            System.out.print("Book publish date \n");
-            Date date = new Date();
-            date.publishDate();
-            AuthorController.showAuthorArrayList();
-
-            System.out.print("Choose an author of the list\n ");
-            System.out.print("Author name: ");
-            String bookAuthor = Auxiliar.ReadStringData(leer);
-            System.out.print("Author last name: ");
-            String bookAuthorLastName = Auxiliar.ReadStringData(leer);
-
-            int authorSub = AuthorController.getAuthor(bookAuthor, bookAuthorLastName);
-            Book book = new Book(title, isbn, AuthorRepository.authors.get(authorSub), date, true);
-            BookRepository.books.add(book);
-            AuthorRepository.authors.get(authorSub).setBooks(book);
-            seeAllBooks();
-            System.out.print("The book was created and is available to borrow\n");
-        }
+    public void addToArray(Book book) {
+        BookRepository.books.add(book);
     }
 
     /**
-     * Method using to choose witch books see
+     * This method is using to edit the books
      */
-    public void seeBooks() {
-        System.out.print("""
-                --- See books ---
-                1) All books
-                2) Available books to borrow
-                3) Books borrowed
-                Option:\s""");
-        int seeBookOption = Auxiliar.ReadIntData(leer);
-        switch (seeBookOption) {
-            case 1 -> seeAllBooks();
-            case 2 -> seeAvailableBooks();
-            case 3 -> seeNoAvailableBooks();
+    @Override
+    public void edit() {
+        if (!BookRepository.books.isEmpty()) {
+            this.getAvailableArray();
+            System.out.println("Book to edit");
+            System.out.print("isbn: ");
+            String isbn = scanner.nextLine();
+            if (this.getBook(isbn) != null) {
+
+                Menu editBook = new Menu();
+                Controller editTitle = () -> this.editTitle(this.getBook(isbn));
+                Controller editIsbn = () -> this.editIsbn(this.getBook(isbn));
+                Controller editPublish = () -> this.editPublishDate(this.getBook(isbn));
+                editBook.addMenuItem(1, new MenuItem("Edit title", editTitle));
+                editBook.addMenuItem(1, new MenuItem("Edit title", editIsbn));
+                editBook.addMenuItem(1, new MenuItem("Edit title", editPublish));
+            } else {
+                System.out.print(color.getRed() + "ERROR: " + color.getReset() + "Book did not found\n");
+            }
+        } else {
+            System.out.print(color.getRed() + "ERROR: " + color.getReset() + "There are not books\n");
         }
     }
 
+    private void editTitle(Book book) {
+        StringValidator titleValidator = (value) -> !value.isEmpty();
+        String title = reader.readString("Book title", titleValidator);
+        book.setTitle(title);
+    }
+    private void editIsbn(Book book){
+        String isbn;
+        StringValidator isbnValidator = (value) -> {
+            for (int i = 0; i < value.length(); i++) {
+                return Character.isDigit(value.charAt(i));
+            }
+            return false;
+        };
+
+        isbn = reader.readString("ISBN", isbnValidator);
+        book.setIsbn(isbn);
+    }
+    private void editPublishDate(Book book){
+        System.out.println("Book publish date");
+
+        IntegerValidator dayValidator = (value) -> value > 0 && value <= 31;
+        int day = reader.readInt("Day (DD)", dayValidator);
+
+        IntegerValidator monthValidator = (value) -> value > 0 && value <= 12;
+        int month = reader.readInt("Mes (MM)", monthValidator);
+
+        IntegerValidator yearValidator = (value) -> value > 999 && value <= 9999;
+        int year = reader.readInt("Year (YYYY)", yearValidator);
+
+        Date date = new Date(day, month, year);
+        book.setPublishDate(date);
+    }
+
     /**
-     * This method is using to see all the book that are registered
+     * Method to show the books
      */
-    public static void seeAllBooks() {
-        String available = "";
-        if (BookRepository.books.isEmpty()) {
-            System.out.print("There are not books\n");
-        } else {
-            System.out.printf("%n----  Books  ----%n");
-            System.out.printf("------------------------------------------------------------%n");
-            System.out.printf("|%-15s|%-10s|%-15s|%-15s|%-10s|%n", "Title", "ISBN", "Author", "Publish date", "Available");
-            System.out.printf("------------------------------------------------------------%n");
+    public void showBooks() {
+        Menu showBookMenu = new Menu();
+        showBookMenu.addMenuItem(1, new MenuItem("All books", this::getArray));
+        showBookMenu.addMenuItem(2, new MenuItem("Available books", this::getAvailableArray));
+        showBookMenu.addMenuItem(3, new MenuItem("Borrowed books", this::getBorrowedBooks));
+        showBookMenu.display();
+    }
+
+    /**
+     * Method using to print the array of books
+     */
+    @Override
+    public void getArray() {
+        if (!BookRepository.books.isEmpty()) {
+            System.out.printf(color.getBlue() + "%50s " + color.getReset() + "%n-------------------------------------------------------------------------------------%n", ">>> Books <<<");
+            System.out.printf("| %-25s | %-5s | %-12s | %-15s | %-12s |%n" +
+                    "-------------------------------------------------------------------------------------%n", "Title", "ISBN", "Publish date", "Author", "Available");
             for (Book books : BookRepository.books) {
-                if (books.isAvaible()) {
+                String available;
+                if (books.isAvailable()) {
                     available = "Available";
                 } else {
                     available = "No available";
                 }
-                System.out.printf("|%-15s|%-10s|%-15s|%-15s|%-10s|%n", books.getTitle(), books.getIsbn(), books.getAuthor().getProfile().getName(), books.getPublishDate().getStringPublishDate(), available);
-                System.out.printf("------------------------------------------------------------%n");
+                System.out.printf("| %-25s | %-5s | %-12s | %-15s | %-12s |" +
+                        "%n-------------------------------------------------------------------------------------%n", books.getTitle(), books.getIsbn(), books.getPublishDate().dateString(), books.getAuthor(), available);
             }
+        } else {
+            System.out.print(color.getRed() + "ERROR: " + color.getReset() + "There are not books\n");
         }
     }
 
     /**
-     * Method using to see available books
+     * Method to see available books
      */
-    public static void seeAvailableBooks() {
-        if (BookRepository.books.isEmpty()) {
-            System.out.print("There are not books\n");
-        } else {
-            System.out.printf("%n----  Books  ----%n");
-            System.out.printf("------------------------------------------------------------%n");
-            System.out.printf("|%-15s|%-10s|%-15s|%-15s|%-10s|%n", "Title", "ISBN", "Author", "Publish date", "Available");
-            System.out.printf("------------------------------------------------------------%n");
+    public void getAvailableArray() {
+        if (!BookRepository.books.isEmpty()) {
+            System.out.printf(color.getBlue() + "%50s " + color.getReset() + "%n-------------------------------------------------------------------------------------%n", ">>> Books <<<");
+            System.out.printf("| %-25s | %-5s | %-12s | %-15s | %-12s |%n" +
+                    "-------------------------------------------------------------------------------------%n", "Title", "ISBN", "Publish date", "Author", "Available");
             for (Book books : BookRepository.books) {
-                if (books.isAvaible()) {
-                    System.out.printf("|%-15s|%-10s|%-15s|%-15s|%-10s|%n", books.getTitle(), books.getIsbn(), books.getAuthor().getProfile().getName(), books.getPublishDate().getStringPublishDate(), "Available");
-                    System.out.printf("------------------------------------------------------------%n");
+                String available;
+                if (books.isAvailable()) {
+                    available = "Available";
+                    System.out.printf("| %-25s | %-5s | %-12s | %-15s | %-12s |" +
+                            "%n-------------------------------------------------------------------------------------%n", books.getTitle(), books.getIsbn(), books.getPublishDate().dateString(), books.getAuthor(), available);
                 }
             }
+        } else {
+            System.out.print(color.getRed() + "ERROR: " + color.getReset() + "There are not books\n");
         }
     }
 
     /**
      * Method using to see not available books
      */
-    public static void seeNoAvailableBooks() {
-        if (BookRepository.books.isEmpty()) {
-            System.out.print("There are not books\n");
-        } else {
-            System.out.printf("%n----  Books  ----%n");
-            System.out.printf("------------------------------------------------------------%n");
-            System.out.printf("|%-15s|%-10s|%-15s|%-15s|%-10s|%n", "Title", "ISBN", "Author", "Publish date", "Available");
-            System.out.printf("------------------------------------------------------------%n");
+    public void getBorrowedBooks() {
+        if (!BookRepository.books.isEmpty()) {
+            System.out.printf(color.getBlue() + "%50s " + color.getReset() + "%n-------------------------------------------------------------------------------------%n", ">>> Books <<<");
+            System.out.printf("| %-25s | %-5s | %-12s | %-15s | %-12s |%n" +
+                    "-------------------------------------------------------------------------------------%n", "Title", "ISBN", "Publish date", "Author", "Available");
             for (Book books : BookRepository.books) {
-                if (!books.isAvaible()) {
-                    System.out.printf("|%-15s|%-10s|%-15s|%-15s|%-10s|%n", books.getTitle(), books.getIsbn(), books.getAuthor().getProfile().getName(), books.getPublishDate().getStringPublishDate(), "Borrowed");
-                    System.out.printf("------------------------------------------------------------%n");
+                String available;
+                if (!books.isAvailable()) {
+                    available = "No available";
+                    System.out.printf("| %-25s | %-5s | %-12s | %-15s | %-12s |" +
+                            "%n-------------------------------------------------------------------------------------%n", books.getTitle(), books.getIsbn(), books.getPublishDate().dateString(), books.getAuthor(), available);
                 }
             }
-        }
-    }
-
-    /**
-     * Choose the option that the user wants to edit of the book
-     */
-    private void editBookInfo() {
-        if (BookRepository.books.isEmpty()) {
-            System.out.print("There are not books registered\n");
         } else {
-            seeAllBooks();
-            System.out.print("Book ISBN: ");
-            String isbnEdit = Auxiliar.ReadStringData(leer);
-            if (getBook(isbnEdit) != -1) {
-                System.out.printf("What would you like to edit of the book: %-15s\n", BookRepository.books.get(getBook(isbnEdit)).getTitle());
-                System.out.print("""
-                        1) Title
-                        2) ISBN
-                        3) Author
-                        4) Publish date
-                        Option:\s""");
-                int editBookOption = Auxiliar.ReadIntData(leer);
-                editBook(editBookOption, getBook(isbnEdit));
-            } else {
-                System.out.print("Book did not found\n");
-            }
+            System.out.print(color.getRed() + "ERROR: " + color.getReset() + "There are not books\n");
         }
     }
 
     /**
-     * This method is using to edit the book info
+     * Get a book using isbn
      *
-     * @param optionEdit is the option the user chosen
-     * @param position   is the position of the book in the array list
+     * @param isbn is the isbn of the book
+     * @return the book that we are looking for
      */
-    private void editBook(int optionEdit, int position) {
-        switch (optionEdit) {
-            case 1 -> {
-                System.out.print("New title: ");
-                String newTitle = Auxiliar.ReadStringData(leer);
-                BookRepository.books.get(position).setTitle(newTitle);
-                System.out.printf("New title: %s", BookRepository.books.get(position).getTitle());
-            }
-            case 2 -> {
-                System.out.print("New ISBN: ");
-                String newIsbn = Auxiliar.ReadStringData(leer);
-                BookRepository.books.get(position).setIsbn(newIsbn);
-                System.out.printf("New isbn: %s", BookRepository.books.get(position).getIsbn());
-            }
-            case 3 -> {
-                AuthorController.showAuthorArrayList();
-                System.out.print("New author ");
-                System.out.print("Name: ");
-                String newAuthor = Auxiliar.ReadStringData(leer);
-                System.out.print("Last name: ");
-                String newLastName = Auxiliar.ReadStringData(leer);
-                int authorPosition = AuthorController.getAuthor(newAuthor, newLastName);
-                if (authorPosition != -1) {
-                    int oldAuthor = AuthorController.getAuthor(BookRepository.books.get(position).getAuthor().getProfile().getName(), BookRepository.books.get(position).getAuthor().getProfile().getLastName());
-                    String bookIsbn = BookRepository.books.get(position).getIsbn();
-                    for (int i = 0; i <= AuthorRepository.authors.get(oldAuthor).getBooks().size(); i++) {
-                        if (AuthorRepository.authors.get(oldAuthor).getBooks().get(i).getIsbn().equalsIgnoreCase(bookIsbn)) {
-                            AuthorRepository.authors.get(oldAuthor).getBooks().remove(i);
-                        }
-                    }
-                    AuthorRepository.authors.get(authorPosition).setBooks(BookRepository.books.get(position));
-                } else {
-                    System.out.print("Author did not found\n");
-                }
-                System.out.printf("New author: %s", BookRepository.books.get(position).getAuthor().getProfile().getName());
-            }
-            case 4 -> {
-                Date date = new Date();
-                date.setPublishDate(date.publishDate());
-                BookRepository.books.get(position).setPublishDate(date);
-                System.out.printf("New date: %s", BookRepository.books.get(position).getPublishDate().getStringPublishDate());
+    public Book getBook(String isbn) {
+        for (Book book : BookRepository.books) {
+            if (book.getIsbn().equals(isbn)) {
+                return book;
             }
         }
-    }
-
-    /**
-     * This method is using to delete books
-     * We can´t eliminate books if they are borrowed
-     */
-    private void deleteBook() {
-        if (BookRepository.books.isEmpty()) {
-            System.out.print("There are not books registered\n");
-        } else {
-            seeAllBooks();
-            System.out.print("ISBN of book to delete: ");
-            String bookDelete = Auxiliar.ReadStringData(leer);
-            if (getBook(bookDelete) != -1) {
-                if (!BookRepository.books.get(getBook(bookDelete)).isAvaible()) {
-                    System.out.print("Can not eliminate the book, it is borrowed\n");
-                } else {
-                    String author = BookRepository.books.get(getBook(bookDelete)).getAuthor().getProfile().getName();
-                    String authorLast = BookRepository.books.get(getBook(bookDelete)).getAuthor().getProfile().getLastName();
-                    for (int i = 0; i < AuthorRepository.authors.get(AuthorController.getAuthor(author, authorLast)).getBooks().size(); i++) {
-                        if (AuthorRepository.authors.get(AuthorController.getAuthor(author, authorLast)).getBooks().get(i).getIsbn().equalsIgnoreCase(bookDelete)) {
-                            AuthorRepository.authors.get(AuthorController.getAuthor(author, authorLast)).getBooks().remove(i);
-                        }
-                    }
-                    BookRepository.books.remove(getBook(bookDelete));
-                }
-            } else {
-                System.out.print("Book did not found\n");
-            }
-        }
-    }
-
-    /**
-     * Method using to get a specific book
-     *
-     * @param isbn is the isbn of the book that we are looking for
-     * @return the position of the book in the array list
-     */
-    public static int getBook(String isbn) {
-        int bookPosition = -1;
-        for (int i = 0; i < BookRepository.books.size(); i++) {
-            if (BookRepository.books.get(i).getIsbn().equalsIgnoreCase(isbn)) {
-                bookPosition = i;
-            }
-        }
-        return bookPosition;
+        return null;
     }
 }

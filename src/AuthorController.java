@@ -1,229 +1,150 @@
 import java.util.Scanner;
 
-public class AuthorController {
-    Scanner leer = new Scanner(System.in);
-    ProfileController profileController = new ProfileController();
+public class AuthorController implements ControllerCom, Controller {
+    ConsoleReader reader = new ConsoleReader();
+    Colors color = new Colors();
+    ProfileController profCon = new ProfileController();
+    Scanner scanner = new Scanner(System.in);
+    public static Administrator adm;
 
-    /**
-     * Main menu of authors
-     *
-     * @return the option that the user chosen
-     */
-    public String AuthorMenu(Administrator administrator) {
-        String authorMenuOption;
-        System.out.printf("%n >>>> Authors menu <<<<%n");
-        Auxiliar.createMenu(administrator);
-        /*System.out.printf("Select an option%n" +
-                "1) Add an author%n" +
-                "2) See authors%n" +
-                "3) Edit author info%n" +
-                "4) Delete author%n" +
-                "Option: ");
-
+    @Override
+    public void execute() {
+        Menu authorMenu = new Menu();
+        for (Permissions perm : adm.getPermissions()) {
+            if (perm.toString().equalsIgnoreCase("WRITE")) {
+                authorMenu.addMenuItem(1, new MenuItem("Create author", this::create));
+                authorMenu.addMenuItem(2, new MenuItem("Edit authors", this::edit));
+            }
+            if (perm.toString().equalsIgnoreCase("DELETE")) {
+                authorMenu.addMenuItem(3, new MenuItem("Delete author", this::delete));
+            }
+            if (perm.toString().equalsIgnoreCase("READ")) {
+                authorMenu.addMenuItem(4, new MenuItem("Show authors", this::getArray));
+            }
+        }
+            authorMenu.display();
+        }
+        /**
+         * This method is using to create an author
          */
-        System.out.print("Option: ");
-        authorMenuOption = Auxiliar.ReadStringData(leer);
-        for (Permission permis : administrator.getPermissions()) {
-            if (!authorMenuOption.equalsIgnoreCase(String.valueOf(permis))) {
-                System.out.print("Invalid option\n");
-                authorMenuOption = "a";
-            }
+        @Override
+        public void create () {
+            System.out.println("Author information");
+            Profile profile = profCon.createProfile();
+            Author author = new Author(profile);
+            this.addToArray(author);
         }
-        return authorMenuOption;
-    }
 
-    /**
-     * Is the switch of the main menu of authors
-     *
-     * @param authorOption is the option that was chosen by the user
-     */
-    public void authorSwitch(String authorOption) {
-        switch (authorOption) {
-            case "write" -> //Add
-                    this.addAuthor();
-            case "read" -> //See
-                    showAuthorArrayList();
-            case "edit" -> {//Edit
-                this.editAuthorInfo();
-                showAuthorArrayList();
-            }
-            case "deete" -> {//Delete
-                this.deleteAuthor();
-                showAuthorArrayList();
-            }
-        }
-    }
+        /**
+         * This method is using to delete authors
+         */
+        @Override
+        public void delete () {
+            if (!AuthorRepository.authors.isEmpty()) {
+                StringValidator nameValidator = (value) -> !value.isEmpty();
+                String name = reader.readString("Author name", nameValidator);
 
-    /**
-     * Add a new author to the arrayLis
-     */
-    private void addAuthor() {
-        Profile profile;
-        System.out.printf(" >>> Add a new author <<<%n");
-        System.out.printf("Author info %n");
-        profile = profileController.createProfile();
-        System.out.print("Profile created\n");
-        Author author = new Author();
-        author.setProfile(profile);
-        AuthorRepository.authors.add(author); //Add author
-        System.out.print("Actual authors list\n");
-        showAuthorArrayList();
-    }
+                StringValidator lastValidator = (value) -> !value.isEmpty();
+                String lastName = reader.readString("Author last name", lastValidator);
 
-    /**
-     * Method using to edit the info of an author
-     */
-    private void editAuthorInfo() {
-        if (AuthorRepository.authors.isEmpty()) {
-            System.out.print("There are not author registered\n");
-        } else {
-            showAuthorArrayList();
-            System.out.printf(" >>> Edit author info <<<%n");
-            System.out.print("Author name: ");
-            String nameEdit = Auxiliar.ReadStringData(leer);
-            System.out.print("Author last name: ");
-            String lastNameEdit = Auxiliar.ReadStringData(leer);
-            int position = getAuthor(nameEdit, lastNameEdit);
-            if (position != -1) {
-                System.out.printf("What would you like to edit of %s%n", AuthorRepository.authors.get(position).getProfile().getName());
-                System.out.printf("1) Name%n" +
-                        "2) Last name%n" +
-                        "3) Birth date%n" +
-                        "4) Books%n%n" +
-                        "Option: ");
-                int editOption = Auxiliar.ReadIntData(leer);
-                if (editOption == 4) {
-                    this.editBooks(position);
-                } else if (editOption > 0 && editOption <= 3) {
-                    profileController.editAuthorProfile(editOption, position);
+                if (this.getAuthor(name, lastName) != null) {
+                    AuthorRepository.authors.remove(this.getAuthor(name, lastName));
                 } else {
-                    System.out.print("Invalid option\n");
+                    System.out.print(color.getRed() + "ERROR: " + color.getReset() + "Author did not found\n");
                 }
             } else {
-                System.out.print("Author did not find\n");
+                System.out.print(color.getRed() + "ERROR: " + color.getReset() + "Not authors registered\n");
             }
         }
-    }
 
-    /**
-     * Method using to show the authors and the books that they have
-     */
-    public static void showAuthorArrayList() {
-        if (AuthorRepository.authors.isEmpty()) {
-            System.out.printf("No registered authors%n");
-        } else {
-            System.out.print("\n\n---- Authors ----");
-            System.out.printf("-----------------------%n");
-            System.out.printf("|%-15s|%-20s|%-20s|%-20s|%n", "Author name", "Author last name", "Author birth", "Books");
-            System.out.printf("-----------------------%n");
-            for (Author authorArray : AuthorRepository.authors) {
-                String authorBooks = getStringAuthorBooks(authorArray);
-                System.out.printf("|%-15s|%-20s|%-20s|%-20s|%n", authorArray.getProfile().getName(), authorArray.getProfile().getLastName(), authorArray.getProfile().getBirthDate().getStringBirthDate(), authorBooks);
-                System.out.printf("-----------------------%n");
-            }
+        /**
+         * Method using to add an author to the arrayList
+         *
+         * @param author is the author that we are adding
+         */
+        public void addToArray (Author author){
+            AuthorRepository.authors.add(author);
         }
-    }
 
-    /**
-     * Method using to eliminate an author
-     * We can´t eliminate an author if it has books
-     */
-    private void deleteAuthor() {
-        if (!AuthorRepository.authors.isEmpty()) {
-            showAuthorArrayList();
-            System.out.print("Name of author to eliminate: ");
-            String nameDelete = Auxiliar.ReadStringData(leer);
-            System.out.print("Last name of author to eliminate: ");
-            String lastNameDelete = Auxiliar.ReadStringData(leer);
-            int authorDelete = getAuthor(nameDelete, lastNameDelete);
-            if (AuthorRepository.authors.get(authorDelete).getBooks().isEmpty()) {
-                AuthorRepository.authors.remove(authorDelete);
-                System.out.print("Author eliminated\n");
-            } else {
-                System.out.print("Can not eliminate the author, it has books\n");
-            }
-        }
-    }
-
-    /**
-     * Get the books of an author this is using when we show the author array list
-     *
-     * @param authorArray is the array list of the authors
-     * @return the array list with the author name and the books that it has
-     */
-    private static String getStringAuthorBooks(Author authorArray) {
-        String books = "";
-        if (authorArray.getBooks().isEmpty()) {
-            books = "Not books registered";
-        } else {
-            for (Book authorBooks : authorArray.getBooks()) {
-                books += authorBooks.getTitle() + "\n/////////////////////////////////////////////////////";
-            }
-        }
-        return books;
-    }
-
-    /**
-     * Method using to find an author in the array list using its name
-     *
-     * @param name is the name of the author
-     * @return the position of the author in the array list
-     */
-    public static int getAuthor(String name, String lastName) {
-        int ind = -1;
-        for (int i = 0; i < AuthorRepository.authors.size(); i++) {
-            if (AuthorRepository.authors.get(i).getProfile().getName().equalsIgnoreCase(name) && AuthorRepository.authors.get(i).getProfile().getLastName().equalsIgnoreCase(lastName)) {
-                ind = i;
-            }
-        }
-        return ind;
-    }
-
-    /**
-     * Method using or edit books
-     *
-     * @param authorPosition is the position of the author in the array list
-     */
-    private void editBooks(int authorPosition) {
-        boolean delete = false;
-        if (AuthorRepository.authors.get(authorPosition).getBooks().isEmpty()) {
-            System.out.print("The author does not have books\n");
-        } else {
-            showAuthorArrayList();
-            System.out.printf("Delete a book: \n" +
-                    "1) Si%n" +
-                    "2) No%n" +
-                    "Option: ");
-            int option = Auxiliar.ReadIntData(leer);
-            if (option == 1) {
-                System.out.print("---- Author books ----");
-                System.out.printf("---------------------------------%n");
-                for (Book authorBooks : AuthorRepository.authors.get(authorPosition).getBooks()) {
-                    System.out.printf("|%-15s|%-15s|%n", "Title", "ISBN");
-                    System.out.printf("|%-15s|%-15s|%n", authorBooks.getTitle(), authorBooks.getIsbn());
-                    System.out.print("---------------------------------\n");
-                }
-                System.out.print("Book ISBN: ");
-                String bookIsbn = Auxiliar.ReadStringData(leer);
-                if (BookController.getBook(bookIsbn) != -1) {
-                    for (int i = 0; i <= AuthorRepository.authors.get(authorPosition).getBooks().size(); i++) {
-                        if (AuthorRepository.authors.get(authorPosition).getBooks().get(i).getIsbn().equalsIgnoreCase(bookIsbn)) {
-                            if (AuthorRepository.authors.get(authorPosition).getBooks().get(i).isAvaible()) {
-                                AuthorRepository.authors.get(authorPosition).getBooks().remove(i);
-                                delete = true;
-                            }
-                        }
-                    }
-                    if (delete) {
-                        BookRepository.books.remove(BookController.getBook(bookIsbn));
-                        System.out.print("Book deleted\n");
-                    } else {
-                        System.out.print("Book were borrow, can not eliminate\n");
-                    }
+        /**
+         * This method is using to edit books
+         */
+        @Override
+        public void edit () {
+            if (!AuthorRepository.authors.isEmpty()) {
+                this.getArray();
+                System.out.println("Author to edit");
+                System.out.print("Name: ");
+                String name = scanner.nextLine();
+                System.out.print("Lastname: ");
+                String last = scanner.nextLine();
+                if (this.getAuthor(name, last) != null) {
+                    Menu editMenu = new Menu();
+                    Controller editName = () -> profCon.editName(this.getAuthor(name, last));
+                    Controller edidLast = () -> profCon.editLastName(this.getAuthor(name, last));
+                    Controller editBirth = () -> profCon.editBirth(this.getAuthor(name, last));
+                    editMenu.addMenuItem(1, new MenuItem("Edit name", editName));
+                    editMenu.addMenuItem(2, new MenuItem("Edit lastname", edidLast));
+                    editMenu.addMenuItem(3, new MenuItem("Edit birth date", editBirth));
+                    editMenu.display();
                 } else {
-                    System.out.print("Book did not found\n");
+                    System.out.print(color.getRed() + "ERROR: " + color.getReset() + "Author did not found\n");
                 }
+            } else {
+                System.out.print(color.getRed() + "ERROR: " + color.getReset() + "There are not authors registered\n");
             }
         }
+
+        /**
+         * Method using to print the array of authors
+         */
+        @Override
+        public void getArray () {
+            if (!AuthorRepository.authors.isEmpty()) {
+                System.out.printf(color.getBlue() + "%40s %n" + color.getReset() + "--------------------------------------------------------------------------\n", ">>> Author <<<");
+                System.out.printf("| %-12s | %-12s | %-12s | %-25s |%n" +
+                        "--------------------------------------------------------------------------%n", "Name", "Lastname", "Birth date", "Books");
+                for (Author author : AuthorRepository.authors) {
+                    String books = this.authorBooks(author);
+                    System.out.printf("| %-12s | %-12s | %-12s | %-25s |%n" +
+                            "--------------------------------------------------------------------------%n", author.getProfile().getName(), author.getProfile().getLastName(), author.getProfile().getBirthDate().dateString(), books);
+                }
+            } else {
+                System.out.print(color.getRed() + "ERROR: " + color.getReset() + "Not authors registered\n");
+            }
+        }
+
+        /**
+         * Method using to get the books of the authors
+         *
+         * @param author are the author to get the books
+         * @return a String with the book of that author
+         */
+        private String authorBooks (Author author){
+            String book = "";
+            if (author.getBooks().isEmpty()) {
+                return "No books";
+            } else {
+                for (Book books : author.getBooks()) {
+                    book += books.getTitle() + "\n----------------------------------------------";
+                }
+            }
+            return book;
+        }
+
+        /**
+         * Get author using name and last name
+         *
+         * @param name     is the name of the author
+         * @param lastName is the las name of the author
+         * @return the author that we are looking for
+         */
+        public Author getAuthor (String name, String lastName){
+            for (Author author : AuthorRepository.authors) {
+                if (author.getProfile().getName().equals(name) && author.getProfile().getLastName().equals(lastName)) {
+                    return author;
+                }
+            }
+            return null;
+        }
     }
-}
